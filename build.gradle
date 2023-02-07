@@ -1,0 +1,54 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+    ext.kotlin_version = "1.7.10"
+
+    apply from: 'dependencies.gradle'
+    apply from: 'dependencies_groups.gradle'
+
+    repositories {
+        google()
+        jcenter()
+        maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+//        maven { url 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2' }
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:7.3.0'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+
+        classpath libs.gradle.gradlePlugin
+        classpath libs.gradle.kotlinPlugin
+        classpath 'com.vanniktech:gradle-maven-publish-plugin:0.18.0'
+        classpath "org.jetbrains.dokka:dokka-gradle-plugin:1.7.0"
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
+plugins {
+    id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
+//    id 'com.android.library' version '7.3.1' apply false
+//    id 'org.jetbrains.kotlin.android' version '1.7.20' apply false
+}
+
+allprojects {
+    repositories {
+//        mavenLocal()
+        google()
+        jcenter()
+        maven { url 'https://jitpack.io' }
+        maven { url "https://s01.oss.sonatype.org/content/groups/staging"}
+    }
+
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+        // Stop ignoring warnings to force stopping usage of deprecated API from the SDK
+//        kotlinOptions.allWarningsAsErrors = true
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
+
+apply from: 'scripts/publish-root.gradle'

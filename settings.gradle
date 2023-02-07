@@ -1,0 +1,5 @@
+include ':app'
+include ':sdn-sdk-android'
+include ':sdn-sdk-service'
+include ':sdn-sdk-radix'
+rootProject.name = "sendingnetwork-android-sdk"

@@ -1,0 +1,62 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+android {
+    namespace 'org.sdn.android.sdk.sample'
+    compileSdkVersion 33
+
+    defaultConfig {
+        applicationId "org.sdn.android.sdk.sample"
+        minSdkVersion 24
+        targetSdkVersion 33
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+
+    buildFeatures {
+        viewBinding true
+    }
+}
+
+dependencies {
+    implementation 'com.jakewharton.timber:timber:5.0.1'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.5.1'
+
+    implementation 'androidx.core:core-ktx:1.9.0'
+    // Cannot upgrade to 1.5.0, there are some duplicate class errors.
+    implementation 'androidx.appcompat:appcompat:1.4.2'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'com.google.android.material:material:1.6.1'
+
+//    implementation project(':sdn-sdk-android')
+    implementation 'io.github.linx-opennetwork:sdn-sdk-android:0.1.0'
+//    implementation project(':sdn-sdk-service')
+    implementation 'io.github.linx-opennetwork:sdn-sdk-service:0.1.0'
+
+    implementation 'androidx.recyclerview:recyclerview:1.2.1'
+    implementation 'com.squareup.picasso:picasso:2.71828'
+    implementation 'com.amulyakhare:com.amulyakhare.textdrawable:1.0.1'
+    implementation 'jp.wasabeef:picasso-transformations:2.2.1'
+    implementation 'com.github.stfalcon:chatkit:0.3.3'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+
+    implementation "org.web3j:core:4.8.8-android"
+}
