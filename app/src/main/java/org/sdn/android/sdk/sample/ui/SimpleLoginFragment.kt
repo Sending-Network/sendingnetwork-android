@@ -34,6 +34,7 @@ import org.sdn.android.sdk.sample.SessionHolder
 import org.sdn.android.sdk.sample.databinding.FragmentLoginBinding
 import org.sdn.android.sdk.server.RadixService
 import org.web3j.crypto.*
+import timber.log.Timber
 
 
 class SimpleLoginFragment : Fragment() {
@@ -106,6 +107,7 @@ class SimpleLoginFragment : Fragment() {
                 authService.didLogin(edgeNodeConnectionConfig,
                     userDid, loginDidMsg.updated, token)
             } catch (failure: Throwable) {
+                Timber.tag("login").e("login fail: ${failure.message}")
                 Toast.makeText(requireContext(), "Failure: $failure", Toast.LENGTH_SHORT).show()
                 null
             }?.let {

@@ -184,6 +184,8 @@ dependencies {
 
     implementation libs.squareup.moshi
     implementation libs.squareup.moshiAdapters
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.5.0'
     kapt libs.squareup.moshiKotlin
 
     api "com.atlassian.commonmark:commonmark:0.13.0"
@@ -215,6 +217,9 @@ dependencies {
 
     // Video compression
     implementation 'com.otaliastudios:transcoder:0.10.4'
+
+    // Jitsi Meet
+    implementation ('org.jitsi.react:jitsi-meet-sdk:5.1.0')
 
     // Exif data handling
     implementation libs.apache.commonsImaging

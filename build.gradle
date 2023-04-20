@@ -38,7 +38,8 @@ allprojects {
         google()
         jcenter()
         maven { url 'https://jitpack.io' }
-        maven { url "https://s01.oss.sonatype.org/content/groups/staging"}
+        maven { url "https://s01.oss.sonatype.org/content/groups/staging" }
+        maven { url "https://github.com/jitsi/jitsi-maven-repository/raw/master/releases" }
     }
 
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {

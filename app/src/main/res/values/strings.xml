@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">sdn-sdk-android-sample</string>
+    <string name="conference">Conference</string>
 </resources>

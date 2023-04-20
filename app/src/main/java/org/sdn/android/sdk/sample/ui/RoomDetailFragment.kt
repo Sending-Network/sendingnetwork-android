@@ -39,6 +39,8 @@ import org.sdn.android.sdk.sample.SessionHolder
 import org.sdn.android.sdk.sample.databinding.FragmentRoomDetailBinding
 import org.sdn.android.sdk.sample.utils.*
 
+import org.sdn.android.sdk.api.meet.SdnMeetActivity
+
 class RoomDetailFragment : Fragment(), Timeline.Listener, ToolbarConfigurable {
 
     companion object {
@@ -110,10 +112,10 @@ class RoomDetailFragment : Fragment(), Timeline.Listener, ToolbarConfigurable {
                 timeline?.paginate(Timeline.Direction.BACKWARDS, 50)
             }
         })
-        val roomId = arguments?.getString(ROOM_ID_ARGS)!!
+        val roomID = arguments?.getString(ROOM_ID_ARGS)!!
         // You can grab a room from the session
         // If the room is not known (not received from sync) it will return null
-        room = session.getRoom(roomId)
+        room = session.getRoom(roomID)
 
         lifecycleScope.launch {
             room?.readService()?.markAsRead(ReadService.MarkAsReadParams.READ_RECEIPT)
@@ -138,6 +140,10 @@ class RoomDetailFragment : Fragment(), Timeline.Listener, ToolbarConfigurable {
             views.toolbarTitleView.text = roomSummaryAsSDNItem.let {
                 it.displayName?.takeIf { dn -> dn.isNotBlank() } ?: it.id
             }
+        }
+
+        views.toolbarBtnVideo.setOnClickListener {
+            SdnMeetActivity.launch(context!!, roomID)
         }
     }
 
