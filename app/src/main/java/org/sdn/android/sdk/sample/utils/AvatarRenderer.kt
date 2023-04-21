@@ -18,14 +18,18 @@ package org.sdn.android.sdk.sample.utils
 
 import android.graphics.drawable.Drawable
 import android.widget.ImageView
+import androidx.fragment.app.Fragment
 import com.amulyakhare.textdrawable.TextDrawable
 import com.squareup.picasso.Picasso
 import jp.wasabeef.picasso.transformations.CropCircleTransformation
+import org.sdn.android.sdk.api.MatrixUrls.isMxcUrl
+import org.sdn.android.sdk.sample.glide.GlideApp
 import org.sdn.android.sdk.api.session.content.ContentUrlResolver
 import org.sdn.android.sdk.api.util.SDNItem
 import org.sdn.android.sdk.sample.SessionHolder
 
-class AvatarRenderer(private val sdnItemColorProvider: SDNItemColorProvider) {
+
+class AvatarRenderer(private val frag: Fragment, private val sdnItemColorProvider: SDNItemColorProvider) {
 
     companion object {
         private const val THUMBNAIL_SIZE = 250
@@ -33,10 +37,7 @@ class AvatarRenderer(private val sdnItemColorProvider: SDNItemColorProvider) {
 
     fun render(avatarUrl: String?, imageView: ImageView) {
         val resolvedUrl = resolvedUrl(avatarUrl)
-        Picasso.get()
-            .load(resolvedUrl)
-            .transform(CropCircleTransformation())
-            .into(imageView)
+        GlideApp.with(frag).load(resolvedUrl).into(imageView)
     }
 
     fun render(SDNItem: SDNItem, imageView: ImageView) {
@@ -61,6 +62,10 @@ class AvatarRenderer(private val sdnItemColorProvider: SDNItemColorProvider) {
     // PRIVATE API *********************************************************************************
 
     private fun resolvedUrl(avatarUrl: String?): String? {
+        if (avatarUrl.isNullOrBlank()) return null
+
+        if (!avatarUrl.isMxcUrl()) return avatarUrl
+
         // Take care of using contentUrlResolver to use with mxc://
         return SessionHolder.currentSession?.contentUrlResolver()
             ?.resolveThumbnail(

@@ -54,7 +54,7 @@ class RoomListFragment : Fragment(), ToolbarConfigurable {
     private val views get() = _views!!
 
     private val avatarRenderer by lazy {
-        AvatarRenderer(SDNItemColorProvider(requireContext()))
+        AvatarRenderer(this, SDNItemColorProvider(requireContext()))
     }
 
     private val imageLoader = ImageLoader { imageView, url, _ ->

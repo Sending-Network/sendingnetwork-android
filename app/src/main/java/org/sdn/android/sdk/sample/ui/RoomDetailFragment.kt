@@ -65,7 +65,7 @@ class RoomDetailFragment : Fragment(), Timeline.Listener, ToolbarConfigurable {
     private var room: Room? = null
 
     private val avatarRenderer by lazy {
-        AvatarRenderer(SDNItemColorProvider(requireContext()))
+        AvatarRenderer(this, SDNItemColorProvider(requireContext()))
     }
 
     private val imageLoader = ImageLoader { imageView, url, _ ->
