@@ -16,6 +16,7 @@
 
 package org.sdn.android.sdk.sample.ui
 
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -79,7 +80,7 @@ class RoomDetailFragment : Fragment(), Timeline.Listener, ToolbarConfigurable {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         _views = FragmentRoomDetailBinding.inflate(inflater, container, false)
         return views.root
     }
@@ -143,7 +144,7 @@ class RoomDetailFragment : Fragment(), Timeline.Listener, ToolbarConfigurable {
         }
 
         views.toolbarBtnVideo.setOnClickListener {
-            SdnMeetActivity.launch(context!!, roomID)
+            joinRoomMeeting(context!!, roomID)
         }
     }
 
@@ -173,5 +174,9 @@ class RoomDetailFragment : Fragment(), Timeline.Listener, ToolbarConfigurable {
         // It can happens when sync returns, paginating, and updating (local echo, decryption finished...)
         // You probably want to process with DiffUtil before dispatching to your recyclerview
         timelineEventListProcessor.onNewSnapshot(snapshot)
+    }
+
+    private fun joinRoomMeeting(context: Context, roomId: String) {
+        SdnMeetActivity.launch(context, roomId)
     }
 }
