@@ -90,22 +90,12 @@ class SimpleLoginFragment : Fragment() {
             val address = "a4a43324220196914c6E97c032da79038deDa6A1"
             val privateKey = "d91a3ef7a542e7cf5f7146f6cafb7b6f84381ccb93e1bf505ba48278de1662f3"
             val ecKeyPair: ECKeyPair = ECKeyPair.create(privateKey.decodeHex().toByteArray())
-//            val address = Keys.getAddress(ecKeyPair)
             val authService = SampleApp.getSDNClient(requireContext()).authenticationService()
             try {
-                val didList = authService.didList(edgeNodeConnectionConfig, address)
-                if (didList.data.isEmpty()) {
-                    val didCreateResp = authService.didCreate(edgeNodeConnectionConfig, address)
-                    val token = signMessage(ecKeyPair, didCreateResp.message)
-                    val didSaveResp = authService.didSave(edgeNodeConnectionConfig,
-                        didCreateResp.did, token, "create", null, address, didCreateResp.updated)
-                    val tmp = didSaveResp.message
-                }
-                val userDid = didList.data[0]
-                val loginDidMsg = authService.didPreLogin(edgeNodeConnectionConfig, userDid)
+                val loginDidMsg = authService.didPreLogin(edgeNodeConnectionConfig, address)
                 val token = signMessage(ecKeyPair, loginDidMsg.message)
                 authService.didLogin(edgeNodeConnectionConfig,
-                    userDid, loginDidMsg.updated, token)
+                    loginDidMsg.did, loginDidMsg.randomServer, loginDidMsg.updated, token)
             } catch (failure: Throwable) {
                 Timber.tag("login").e("login fail: ${failure.message}")
                 Toast.makeText(requireContext(), "Failure: $failure", Toast.LENGTH_SHORT).show()

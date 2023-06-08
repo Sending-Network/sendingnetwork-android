@@ -145,12 +145,13 @@ interface AuthenticationService {
 
     suspend fun didPreLogin(
         edgeNodeConnectionConfig: EdgeNodeConnectionConfig,
-        did: String,
+        address: String,
     ): LoginDidMsg
 
     suspend fun didLogin(
         edgeNodeConnectionConfig: EdgeNodeConnectionConfig,
         did: String,
+        nonce: String,
         updateTime: String,
         token: String,
     ): Session

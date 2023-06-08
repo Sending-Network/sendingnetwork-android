@@ -39,6 +39,7 @@ internal interface DidLoginTask : Task<DidLoginTask.Params, Session> {
     data class Params(
         val edgeNodeConnectionConfig: EdgeNodeConnectionConfig,
         val did: String,
+        val nonce: String,
         val updated: String,
         val token: String,
         val deviceName: String,
@@ -63,6 +64,7 @@ internal class DefaultDidLoginTask @Inject constructor(
         val loginParams = DidLoginParams(
             type = LoginFlowTypes.DID,
             updated = params.updated,
+            randomServer = params.nonce,
             identifier = Identifier(
                 did = params.did,
                 token = params.token,

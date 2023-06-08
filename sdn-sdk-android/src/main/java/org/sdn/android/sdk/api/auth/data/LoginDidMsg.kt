@@ -16,11 +16,13 @@
 
 package org.sdn.android.sdk.api.auth.data
 
+import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
 data class LoginDidMsg(
         val did: String,
         val message: String,
+        @Json(name = "random_server") val randomServer: String,
         val updated: String,
 )

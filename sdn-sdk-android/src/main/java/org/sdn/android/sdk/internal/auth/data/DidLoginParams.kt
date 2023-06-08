@@ -24,6 +24,7 @@ import org.sdn.android.sdk.api.auth.data.LoginFlowTypes
 internal data class DidLoginParams(
         @Json(name = "type") override val type: String = LoginFlowTypes.DID,
         @Json(name = "updated") val updated: String,
+        @Json(name = "random_server") val randomServer: String,
         @Json(name = "initial_device_display_name") override val deviceDisplayName: String? = null,
         @Json(name = "device_id") override val deviceId: String? = null,
         @Json(name = "identifier") val identifier: Identifier

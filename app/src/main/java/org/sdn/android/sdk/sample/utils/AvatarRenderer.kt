@@ -26,6 +26,7 @@ import org.sdn.android.sdk.api.MatrixUrls.isMxcUrl
 import org.sdn.android.sdk.sample.glide.GlideApp
 import org.sdn.android.sdk.api.session.content.ContentUrlResolver
 import org.sdn.android.sdk.api.util.SDNItem
+import org.sdn.android.sdk.sample.R
 import org.sdn.android.sdk.sample.SessionHolder
 
 
@@ -37,7 +38,7 @@ class AvatarRenderer(private val frag: Fragment, private val sdnItemColorProvide
 
     fun render(avatarUrl: String?, imageView: ImageView) {
         val resolvedUrl = resolvedUrl(avatarUrl)
-        GlideApp.with(frag).load(resolvedUrl).into(imageView)
+        GlideApp.with(frag).load(resolvedUrl).fallback(R.drawable.default_avatar).into(imageView)
     }
 
     fun render(SDNItem: SDNItem, imageView: ImageView) {
@@ -46,6 +47,7 @@ class AvatarRenderer(private val frag: Fragment, private val sdnItemColorProvide
         Picasso.get()
             .load(resolvedUrl)
             .placeholder(placeholder)
+            .error(R.drawable.default_avatar)
             .transform(CropCircleTransformation())
             .into(imageView)
     }

@@ -34,7 +34,7 @@ import javax.inject.Inject
 internal interface DidPreLoginTask : Task<DidPreLoginTask.Params, LoginDidMsg> {
     data class Params(
         val edgeNodeConnectionConfig: EdgeNodeConnectionConfig,
-        val did: String
+        val address: String
     )
 }
 
@@ -51,11 +51,11 @@ internal class DefaultDidPreLoginTask @Inject constructor(
         val authAPI = retrofitFactory.create(client, homeServerUrl)
                 .create(AuthAPI::class.java)
 
-        val loginParams = PreLoginParams(params.did)
+        val loginParams = PreLoginParams(params.address)
 
         val loginDidMsg = try {
             executeRequest(null) {
-                authAPI.preLogin(params.did, loginParams)
+                authAPI.preLogin(loginParams)
             }
         } catch (throwable: Throwable) {
             throw when (throwable) {

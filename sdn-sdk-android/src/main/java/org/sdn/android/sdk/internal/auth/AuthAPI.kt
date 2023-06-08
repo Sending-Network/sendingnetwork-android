@@ -132,8 +132,8 @@ internal interface AuthAPI {
     suspend fun didSave(@Path("did") did: String, @Body didSaveParams: DidSaveParams): DidSaveResp
 
     @Headers("CONNECT_TIMEOUT:60000", "READ_TIMEOUT:60000", "WRITE_TIMEOUT:60000")
-    @POST(NetworkConstants.URI_API_PREFIX_PATH_UNSTABLE + "did/{did}/pre_login")
-    suspend fun preLogin(@Path("did") did: String, @Body loginParams: PreLoginParams): LoginDidMsg
+    @POST(NetworkConstants.URI_API_PREFIX_PATH_UNSTABLE + "did/pre_login1")
+    suspend fun preLogin(@Body loginParams: PreLoginParams): LoginDidMsg
 
     @Headers("CONNECT_TIMEOUT:60000", "READ_TIMEOUT:60000", "WRITE_TIMEOUT:60000")
     @POST(NetworkConstants.URI_API_PREFIX_PATH_UNSTABLE + "did/login")
