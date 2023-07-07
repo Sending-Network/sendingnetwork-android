@@ -16,9 +16,12 @@
 
 package org.sdn.android.sdk.sample.ui
 
+import android.content.DialogInterface
+import android.content.res.Resources
 import android.os.Bundle
 import android.view.*
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.stfalcon.chatkit.commons.ImageLoader
@@ -76,7 +79,26 @@ class RoomListFragment : Fragment(), ToolbarConfigurable {
         views.roomSummaryList.setAdapter(roomAdapter)
         roomAdapter.setDatesFormatter(RoomListDateFormatter())
         roomAdapter.setOnDialogClickListener {
-            showRoomDetail(it.roomSummary)
+            if( it.roomSummary.membership == Membership.INVITE) {
+                val builder = AlertDialog.Builder(requireContext())
+                builder.setTitle(it.roomSummary.name)
+                builder.setMessage("Do you want to join this room?")
+                builder.setPositiveButton("Join") { _, _ ->
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        session.roomService().joinRoom(it.roomSummary.roomId);
+                        showRoomDetail(it.roomSummary)
+                    }
+                }
+                builder.setNegativeButton("Cancel", null)
+                val dialog = builder.create()
+                dialog.setOnShowListener { _ ->
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(resources.getColor(R.color.dark_gray))
+                    dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(resources.getColor(R.color.dark_gray))
+                }
+                dialog.show()
+            } else {
+                showRoomDetail(it.roomSummary)
+            }
         }
 
         // Create query to listen to room summary list
