@@ -51,9 +51,17 @@ internal class DefaultDidPreLoginTask @Inject constructor(
         val authAPI = retrofitFactory.create(client, homeServerUrl)
                 .create(AuthAPI::class.java)
 
-        val loginParams = PreLoginParams(params.address)
-
         val loginDidMsg = try {
+
+            val didListResp = executeRequest(null) {
+                authAPI.didList(params.address)
+            }
+            val loginParams = if (didListResp.data.isNotEmpty()) {
+                PreLoginParams("", didListResp.data[0])
+            } else {
+                PreLoginParams(params.address, "")
+            }
+
             executeRequest(null) {
                 authAPI.preLogin(loginParams)
             }

@@ -150,6 +150,7 @@ interface AuthenticationService {
 
     suspend fun didLogin(
         edgeNodeConnectionConfig: EdgeNodeConnectionConfig,
+        address: String,
         did: String,
         nonce: String,
         updateTime: String,

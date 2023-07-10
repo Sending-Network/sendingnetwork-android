@@ -146,7 +146,10 @@ class RoomListFragment : Fragment(), ToolbarConfigurable {
             }
 
             SessionHolder.currentSession = null
-            activity?.finish()
+            val fragment = SimpleLoginFragment()
+            requireActivity().supportFragmentManager
+                .beginTransaction().replace(R.id.fragmentContainer, fragment).commit()
+//            activity?.finish()
         }
     }
 

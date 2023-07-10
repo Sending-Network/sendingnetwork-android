@@ -472,6 +472,7 @@ internal class DefaultAuthenticationService @Inject constructor(
 
     override suspend fun didLogin(
         edgeNodeConnectionConfig: EdgeNodeConnectionConfig,
+        address: String,
         did: String,
         nonce: String,
         updateTime: String,
@@ -480,6 +481,7 @@ internal class DefaultAuthenticationService @Inject constructor(
         return didLoginTask.execute(
             DidLoginTask.Params(
                 edgeNodeConnectionConfig = edgeNodeConnectionConfig,
+                address = address,
                 did = did,
                 nonce = nonce,
                 updated = updateTime,

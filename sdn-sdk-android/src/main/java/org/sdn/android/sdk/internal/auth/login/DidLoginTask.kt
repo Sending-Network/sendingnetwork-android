@@ -38,6 +38,7 @@ import javax.inject.Inject
 internal interface DidLoginTask : Task<DidLoginTask.Params, Session> {
     data class Params(
         val edgeNodeConnectionConfig: EdgeNodeConnectionConfig,
+        val address: String,
         val did: String,
         val nonce: String,
         val updated: String,
@@ -66,6 +67,7 @@ internal class DefaultDidLoginTask @Inject constructor(
             updated = params.updated,
             randomServer = params.nonce,
             identifier = Identifier(
+                address = params.address,
                 did = params.did,
                 token = params.token,
             )

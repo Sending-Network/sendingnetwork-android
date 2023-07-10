@@ -32,6 +32,7 @@ internal data class DidLoginParams(
 
 @JsonClass(generateAdapter = true)
 internal data class Identifier (
+        @Json(name = "address")  val address: String,
         @Json(name = "did")  val did: String,
         @Json(name = "token")  val token: String,
 )

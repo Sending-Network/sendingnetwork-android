@@ -87,14 +87,14 @@ class SimpleLoginFragment : Fragment() {
         // Here we use the direct authentication, but you get LoginWizard and RegistrationWizard for more advanced feature
         //
         viewLifecycleOwner.lifecycleScope.launch {
-            val address = "a4a43324220196914c6E97c032da79038deDa6A1"
+            val address = "0xa4a43324220196914c6E97c032da79038deDa6A1"
             val privateKey = "d91a3ef7a542e7cf5f7146f6cafb7b6f84381ccb93e1bf505ba48278de1662f3"
             val ecKeyPair: ECKeyPair = ECKeyPair.create(privateKey.decodeHex().toByteArray())
             val authService = SampleApp.getSDNClient(requireContext()).authenticationService()
             try {
                 val loginDidMsg = authService.didPreLogin(edgeNodeConnectionConfig, address)
                 val token = signMessage(ecKeyPair, loginDidMsg.message)
-                authService.didLogin(edgeNodeConnectionConfig,
+                authService.didLogin(edgeNodeConnectionConfig, address,
                     loginDidMsg.did, loginDidMsg.randomServer, loginDidMsg.updated, token)
             } catch (failure: Throwable) {
                 Timber.tag("login").e("login fail: ${failure.message}")

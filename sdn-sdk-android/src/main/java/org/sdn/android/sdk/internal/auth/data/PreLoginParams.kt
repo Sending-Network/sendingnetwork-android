@@ -22,4 +22,5 @@ import com.squareup.moshi.JsonClass
 @JsonClass(generateAdapter = true)
 internal data class PreLoginParams(
         @Json(name = "address") val address: String,
+        @Json(name = "did") val did: String,
 )
