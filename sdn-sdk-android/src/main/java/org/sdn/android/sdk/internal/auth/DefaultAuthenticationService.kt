@@ -477,6 +477,7 @@ internal class DefaultAuthenticationService @Inject constructor(
         nonce: String,
         updateTime: String,
         token: String,
+        appToken: String?,
     ): Session {
         return didLoginTask.execute(
             DidLoginTask.Params(
@@ -486,6 +487,7 @@ internal class DefaultAuthenticationService @Inject constructor(
                 nonce = nonce,
                 updated = updateTime,
                 token = token,
+                appToken = appToken ?: "",
                 deviceName = "",
                 deviceId = null
             )

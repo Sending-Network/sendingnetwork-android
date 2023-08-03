@@ -43,6 +43,7 @@ internal interface DidLoginTask : Task<DidLoginTask.Params, Session> {
         val nonce: String,
         val updated: String,
         val token: String,
+        val appToken: String,
         val deviceName: String,
         val deviceId: String?
     )
@@ -70,6 +71,7 @@ internal class DefaultDidLoginTask @Inject constructor(
                 address = params.address,
                 did = params.did,
                 token = params.token,
+                appToken = params.appToken,
             )
         )
 

@@ -155,6 +155,7 @@ interface AuthenticationService {
         nonce: String,
         updateTime: String,
         token: String,
+        appToken: String? = null,
     ): Session
 
     /**

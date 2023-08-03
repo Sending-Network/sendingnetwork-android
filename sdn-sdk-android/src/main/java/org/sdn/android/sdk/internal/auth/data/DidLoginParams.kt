@@ -35,4 +35,5 @@ internal data class Identifier (
         @Json(name = "address")  val address: String,
         @Json(name = "did")  val did: String,
         @Json(name = "token")  val token: String,
+        @Json(name = "app_token")  val appToken: String,
 )

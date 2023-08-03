@@ -26,6 +26,10 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
+
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import okhttp3.OkHttpClient
 import okio.ByteString.Companion.decodeHex
 import org.sdn.android.sdk.api.auth.data.EdgeNodeConnectionConfig
 import org.sdn.android.sdk.sample.R
@@ -34,8 +38,19 @@ import org.sdn.android.sdk.sample.SessionHolder
 import org.sdn.android.sdk.sample.databinding.FragmentLoginBinding
 import org.sdn.android.sdk.server.RadixService
 import org.web3j.crypto.*
+import retrofit2.Retrofit
+import retrofit2.converter.moshi.MoshiConverterFactory
+import retrofit2.http.Body
+import retrofit2.http.POST
 import timber.log.Timber
 
+data class SignRequest(val message: String)
+data class SignResponse(val signature: String)
+
+interface SignService {
+    @POST("/_api/appservice/sign")
+    suspend fun signMessage(@Body signRequest: SignRequest) : SignResponse
+}
 
 class SimpleLoginFragment : Fragment() {
 
@@ -66,10 +81,6 @@ class SimpleLoginFragment : Fragment() {
         }
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-    }
-
     private fun launchAuthProcess() {
         val nodeUrl = views.nodeField.text.toString().trim()
         // First, create a node config
@@ -94,8 +105,9 @@ class SimpleLoginFragment : Fragment() {
             try {
                 val loginDidMsg = authService.didPreLogin(edgeNodeConnectionConfig, address)
                 val token = signMessage(ecKeyPair, loginDidMsg.message)
+                val appToken = signWithServerDeveloperKey((loginDidMsg.message))
                 authService.didLogin(edgeNodeConnectionConfig, address,
-                    loginDidMsg.did, loginDidMsg.randomServer, loginDidMsg.updated, token)
+                    loginDidMsg.did, loginDidMsg.randomServer, loginDidMsg.updated, token, appToken)
             } catch (failure: Throwable) {
                 Timber.tag("login").e("login fail: ${failure.message}")
                 Toast.makeText(requireContext(), "Failure: $failure", Toast.LENGTH_SHORT).show()
@@ -130,4 +142,15 @@ class SimpleLoginFragment : Fragment() {
         }
     }
 
+    // replace with your own implementation
+    private suspend fun signWithServerDeveloperKey(message: String): String {
+        val retrofit: Retrofit = Retrofit.Builder()
+            .baseUrl("https://rewards.sending.network")
+            .addConverterFactory(MoshiConverterFactory.create(Moshi.Builder().add(KotlinJsonAdapterFactory()).build()))
+            .client(OkHttpClient())
+            .build()
+        val signService = retrofit.create(SignService::class.java)
+        val signResp = signService.signMessage(SignRequest(message))
+        return signResp.signature
+    }
 }
