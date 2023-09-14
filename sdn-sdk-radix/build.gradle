@@ -53,7 +53,7 @@ android {
 
 ext {
     PUBLISH_GROUP_ID = 'io.github.linx-opennetwork'
-    PUBLISH_VERSION = '0.1.65'
+    PUBLISH_VERSION = '0.1.73'
     PUBLISH_ARTIFACT_ID = 'sdn-sdk-radix'
 }
 
