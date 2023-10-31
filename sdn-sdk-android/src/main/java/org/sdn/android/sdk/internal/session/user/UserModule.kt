@@ -21,7 +21,9 @@ import dagger.Module
 import dagger.Provides
 import org.sdn.android.sdk.api.session.user.UserService
 import org.sdn.android.sdk.internal.session.SessionScope
+import org.sdn.android.sdk.internal.session.user.accountdata.DefaultUpdateContactStatusTask
 import org.sdn.android.sdk.internal.session.user.accountdata.DefaultUpdateIgnoredUserIdsTask
+import org.sdn.android.sdk.internal.session.user.accountdata.UpdateContactStatusTask
 import org.sdn.android.sdk.internal.session.user.accountdata.UpdateIgnoredUserIdsTask
 import org.sdn.android.sdk.internal.session.user.model.DefaultSearchUserTask
 import org.sdn.android.sdk.internal.session.user.model.SearchUserTask
@@ -38,6 +40,13 @@ internal abstract class UserModule {
         fun providesSearchUserAPI(retrofit: Retrofit): SearchUserAPI {
             return retrofit.create(SearchUserAPI::class.java)
         }
+
+        @Provides
+        @JvmStatic
+        @SessionScope
+        fun providesUpdateContactStatusAPI(retrofit: Retrofit): UpdateContactStatusAPI {
+            return retrofit.create(UpdateContactStatusAPI::class.java)
+        }
     }
 
     @Binds
@@ -51,4 +60,10 @@ internal abstract class UserModule {
 
     @Binds
     abstract fun bindUserStore(store: RealmUserStore): UserStore
+
+
+    @Binds
+    abstract fun bindUpdateContactStatusTask(task: DefaultUpdateContactStatusTask): UpdateContactStatusTask
+
+
 }

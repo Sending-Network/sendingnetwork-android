@@ -48,7 +48,7 @@ dependencies {
     implementation 'com.google.android.material:material:1.6.1'
 
     implementation project(':sdn-sdk-android')
-//    implementation 'io.github.linx-opennetwork:sdn-sdk-android:0.1.0'
+//    implementation 'io.github.linx-opennetwork:sdn-sdk-android:0.1.1'
     implementation project(':sdn-sdk-service')
 //    implementation 'io.github.linx-opennetwork:sdn-sdk-service:0.1.0'
 

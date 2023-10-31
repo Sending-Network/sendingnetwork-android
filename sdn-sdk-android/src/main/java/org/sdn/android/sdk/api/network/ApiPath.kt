@@ -67,6 +67,8 @@ enum class ApiPath(val path: String, val method: String) {
     // AccountApi
     CHANGE_PASSWORD(NetworkConstants.URI_API_PREFIX_PATH_R0 + "account/password", "POST"),
     DEACTIVATE_ACCOUNT(NetworkConstants.URI_API_PREFIX_PATH_R0 + "account/deactivate", "POST"),
+    UPDATE_CANTACT_ADD(NetworkConstants.URI_API_PREFIX_PATH_R0 + "contact", "PUT"),
+    UPDATE_CANTACT_REMOVE(NetworkConstants.URI_API_PREFIX_PATH_R0 + "contact", "DELETE"),
 
     // SearchApi
     SEARCH(NetworkConstants.URI_API_PREFIX_PATH_R0 + "search", "POST"),

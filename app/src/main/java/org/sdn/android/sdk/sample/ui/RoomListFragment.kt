@@ -26,6 +26,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.stfalcon.chatkit.commons.ImageLoader
 import com.stfalcon.chatkit.dialogs.DialogsListAdapter
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.sdn.android.sdk.api.session.room.model.Membership
 import org.sdn.android.sdk.api.session.room.model.RoomSummary
@@ -47,7 +48,7 @@ class RoomListFragment : Fragment(), ToolbarConfigurable {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View? {
         _views = FragmentRoomListBinding.inflate(inflater, container, false)
         return views.root
@@ -56,6 +57,7 @@ class RoomListFragment : Fragment(), ToolbarConfigurable {
     private var _views: FragmentRoomListBinding? = null
     private val views get() = _views!!
 
+//    private val update:
     private val avatarRenderer by lazy {
         AvatarRenderer(this, SDNItemColorProvider(requireContext()))
     }
@@ -68,13 +70,25 @@ class RoomListFragment : Fragment(), ToolbarConfigurable {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         configureToolbar(views.toolbar, displayBack = false)
-
+11
         views.createRoomButton.setOnClickListener {
             val userId = views.otherUserIdField.text.toString().trim()
 
             viewLifecycleOwner.lifecycleScope.launch {
                 session.roomService().createDirectRoom(otherUserId = userId)
             }
+        //            GlobalScope.launch {
+//                println("contact-signOut out")
+//                val dictionary = mutableMapOf("contact_id" to "@sdn_7dc1c0acc5c08ddd57d06a4420ade8fd54206da1:7dc1c0acc5c08ddd57d06a4420ade8fd54206da1", "is_room" to 1)
+//
+//                try{
+//                    val response = session.userService().removeContact(parameter = dictionary)
+//                    println("contact response=$response")
+//                }catch (t :Throwable){
+//                    val errorMessage = t.toString()
+//                    println("contact error=$errorMessage")
+//                }
+//            }
         }
         views.roomSummaryList.setAdapter(roomAdapter)
         roomAdapter.setDatesFormatter(RoomListDateFormatter())
@@ -116,6 +130,7 @@ class RoomListFragment : Fragment(), ToolbarConfigurable {
             val userSDNItem = user.map { it.toSDNItem() }.getOrNull() ?: return@observe
             avatarRenderer.render(userSDNItem, views.toolbarAvatarImageView)
         }
+
 
         setHasOptionsMenu(true)
     }

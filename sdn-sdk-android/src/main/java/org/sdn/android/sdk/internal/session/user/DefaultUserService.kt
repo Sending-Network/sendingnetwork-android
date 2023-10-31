@@ -20,17 +20,23 @@ import androidx.lifecycle.LiveData
 import androidx.paging.PagedList
 import org.sdn.android.sdk.api.session.user.UserService
 import org.sdn.android.sdk.api.session.user.model.User
+import org.sdn.android.sdk.api.util.JsonDict
 import org.sdn.android.sdk.api.util.Optional
 import org.sdn.android.sdk.internal.session.profile.GetProfileInfoTask
+import org.sdn.android.sdk.internal.session.user.accountdata.UpdateContactStatusTask
 import org.sdn.android.sdk.internal.session.user.accountdata.UpdateIgnoredUserIdsTask
 import org.sdn.android.sdk.internal.session.user.model.SearchUserTask
+import org.sdn.android.sdk.api.SDNCallback
+
 import javax.inject.Inject
+//import kotlinx.serialization.json.Json
 
 internal class DefaultUserService @Inject constructor(
         private val userDataSource: UserDataSource,
         private val searchUserTask: SearchUserTask,
         private val updateIgnoredUserIdsTask: UpdateIgnoredUserIdsTask,
-        private val getProfileInfoTask: GetProfileInfoTask
+        private val getProfileInfoTask: GetProfileInfoTask,
+        private val updateContactStatus: UpdateContactStatusTask
 ) : UserService {
 
     override fun getUser(userId: String): User? {
@@ -78,5 +84,17 @@ internal class DefaultUserService @Inject constructor(
     override suspend fun unIgnoreUserIds(userIds: List<String>) {
         val params = UpdateIgnoredUserIdsTask.Params(userIdsToUnIgnore = userIds.toList())
         updateIgnoredUserIdsTask.execute(params)
+    }
+
+    override suspend fun addContact(parameter: Map<String, Any>) : JsonDict {
+        println("addContact $parameter")
+        var params = UpdateContactStatusTask.Params(parameterAdd = parameter);
+        return   updateContactStatus.execute(params)
+    }
+
+    override suspend fun removeContact(parameter: Map<String, Any>) : JsonDict    {
+        println("removeContact $parameter")
+        var params = UpdateContactStatusTask.Params(parameterRemove = parameter);
+        return updateContactStatus.execute(params)
     }
 }

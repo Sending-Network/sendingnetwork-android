@@ -19,7 +19,9 @@ package org.sdn.android.sdk.api.session.user
 import androidx.lifecycle.LiveData
 import androidx.paging.PagedList
 import org.sdn.android.sdk.api.session.user.model.User
+import org.sdn.android.sdk.api.util.JsonDict
 import org.sdn.android.sdk.api.util.Optional
+
 
 /**
  * This interface defines methods to get users. It's implemented at the session level.
@@ -85,4 +87,10 @@ interface UserService {
      * Note: once done, for the change to take effect, you have to request an initial sync.
      */
     suspend fun unIgnoreUserIds(userIds: List<String>)
+
+
+     suspend fun addContact(parameter: Map<String,  Any>): JsonDict
+
+     suspend fun removeContact(parameter: Map<String, Any>): JsonDict
+
 }
