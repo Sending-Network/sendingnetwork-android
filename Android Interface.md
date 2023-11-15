@@ -414,3 +414,161 @@ roomMsg
 | `highlight_count`    | `integer` | The number of unread notifications for this room with the highlight flag set. |
 | `notification_count` | `integer` | The total number of unread notifications for this room.      |
 
+
+
+#### 10. Ignore
+
+
+
+```
+    /**
+     * Ignore users.
+     * Note: once done, for the change to take effect, you have to request an initial sync.
+     * This may be improved in the future.
+     */
+    suspend fun ignoreUserIds(userIds: List<String>)
+```
+
+
+Entry parameters:
+
+| Name   | Type    | Description | Required |
+| ------ | :------ | :---------- | :------- |
+| userIds | List<String>  | Ignore userIds      | true     |
+
+
+#### 11. Un-ignore 
+
+
+```
+    /**
+     * Un-ignore some users.
+     * Note: once done, for the change to take effect, you have to request an initial sync.
+     */
+    suspend fun unIgnoreUserIds(userIds: List<String>)
+```
+
+
+Entry parameters:
+
+| Name   | Type    | Description | Required |
+| ------ | :------ | :---------- | :------- |
+| userIds | List<String>  | Un-ignore userIds      | true     |
+
+####  location 
+
+Entry parameters:
+
+| Name   | Type    | Description | Required |
+| ------ | :------ | :---------- | :------- |
+| beaconInfoEventId | String  | The event id of the associated beaco info      | true     |
+| latitude | Double  |  latitude    | true     |
+| longitude | Double  |    longitude   | true     |
+| uncertainty | Double  | Accuracy of the location in meters    | true     |
+
+```
+   override suspend fun sendLiveLocation(beaconInfoEventId: String, latitude: Double, longitude: Double, uncertainty: Double?): Cancelable {
+        val params = SendLiveLocationTask.Params(
+                beaconInfoEventId = beaconInfoEventId,
+                roomId = roomId,
+                latitude = latitude,
+                longitude = longitude,
+                uncertainty = uncertainty,
+        )
+        return sendLiveLocationTask.execute(params)
+    }
+```
+
+ 
+
+ 
+
+
+ #### knick 
+
+Entry parameters:
+
+| Name   | Type    | Description | Required |
+| ------ | :------ | :---------- | :------- |
+| userId | String  |    remove userId   | true     |
+| reason | String  | remove String    | false     |
+
+
+```  /**
+     * Remove a user from the room.
+     */
+    suspend fun remove(userId: String, reason: String? = null)
+```
+
+#### addContact 
+
+Entry parameters:
+
+| Name   | Type    | Description | Required |
+| ------ | :------ | :---------- | :------- |
+| parameter | Map<String,  Any> |  mutableMapOf("contact_id" to "xxx", "is_room" to 1)  | true     |
+
+
+```    
+/**
+  *map  key: contact_id ,map key: is_room
+  * add contact 
+*/
+suspend fun addContact(parameter: Map<String,  Any>): JsonDict
+```
+##### example code In Demo 
+
+```
+ val dictionary = mutableMapOf("contact_id" to "XXX", "is_room" to 1)
+ val response = session.userService().addContact(parameter = dictionary)
+```
+
+#### removeContact
+
+Entry parameters:
+
+| Name   | Type    | Description | Required |
+| ------ | :------ | :---------- | :------- |
+| parameter | Map<String,  Any> |  mutableMapOf("contact_id" to "xxx", "is_room" to 1)  | true     |
+
+
+```    
+/**
+*map  key: contact_id  value: String Type ,map key: is_room , value: Int 
+* remove contact
+*/
+suspend fun removeContact(parameter: Map<String, Any>): JsonDict
+```
+##### example code In Demo 
+
+```
+ val dictionary = mutableMapOf("contact_id" to "XXX", "is_room" to 1)
+ val response = session.userService().removeContact(parameter = dictionary)
+```
+
+
+
+####  Redact (delete) 
+
+
+
+```
+        /**
+     * Redact (delete) the given event.
+     * @param event The event to redact
+     * @param reason Optional reason string
+     * @param additionalContent additional content to put in the event content
+     */
+    fun redactEvent(event: Event, reason: String?, additionalContent: Content? = null): Cancelable
+```
+
+
+Entry parameters:
+
+| Name   | Type    | Description | Required |
+| ------ | :------ | :---------- | :------- |
+| event | Event  | The event to redact      | true     |
+| reason |String  |  Optional reason string      | false     |
+| additionalContent | Content | additional content to put in the event content     | false     |
+
+
