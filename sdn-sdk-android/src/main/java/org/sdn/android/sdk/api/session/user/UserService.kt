@@ -88,9 +88,17 @@ interface UserService {
      */
     suspend fun unIgnoreUserIds(userIds: List<String>)
 
-
+   
+     /**
+     *map  key: contact_id  value: String Type ,map key: is_room , value: Int 
+     * add contact 
+     */
      suspend fun addContact(parameter: Map<String,  Any>): JsonDict
-
+   
+     /**
+     *map  key: contact_id  value: String Type ,map key: is_room , value: Int 
+     * remove contact
+     */
      suspend fun removeContact(parameter: Map<String, Any>): JsonDict
 
 }
