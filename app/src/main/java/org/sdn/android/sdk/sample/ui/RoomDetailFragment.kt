@@ -41,6 +41,10 @@ import org.sdn.android.sdk.sample.databinding.FragmentRoomDetailBinding
 import org.sdn.android.sdk.sample.utils.*
 
 import org.sdn.android.sdk.api.meet.SdnMeetActivity
+import android.util.Log
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 
 class RoomDetailFragment : Fragment(), Timeline.Listener, ToolbarConfigurable {
 
@@ -144,7 +148,10 @@ class RoomDetailFragment : Fragment(), Timeline.Listener, ToolbarConfigurable {
         }
 
         views.toolbarBtnVideo.setOnClickListener {
-            joinRoomMeeting(context!!, roomID)
+            Log.d("getMeeting","start")
+            GlobalScope.launch {
+                joinRoomMeeting(context!!, roomID)
+            }
         }
     }
 
@@ -176,7 +183,22 @@ class RoomDetailFragment : Fragment(), Timeline.Listener, ToolbarConfigurable {
         timelineEventListProcessor.onNewSnapshot(snapshot)
     }
 
-    private fun joinRoomMeeting(context: Context, roomId: String) {
-        SdnMeetActivity.launch(context, roomId)
+    private suspend fun joinRoomMeeting(context: Context, roomId: String) {
+        try{
+            val url = session.roomService().getMeetingURL()
+
+            if (url is Map<*, *>) {
+                val urlString = url["svrurl"]
+                 if (urlString != null) {
+                     CoroutineScope(Dispatchers.Main).launch {
+                         // Perform UI-related operations here
+                         SdnMeetActivity.launch(context, roomId,urlString.toString())
+                     }
+                 }
+
+            }
+        }catch (e:Exception){
+            println("meeting error : $e")
+        }
     }
 }

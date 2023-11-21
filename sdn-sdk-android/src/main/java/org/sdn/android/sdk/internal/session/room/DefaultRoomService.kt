@@ -48,6 +48,7 @@ import org.sdn.android.sdk.internal.session.room.alias.GetRoomIdByAliasTask
 import org.sdn.android.sdk.internal.session.room.create.CreateLocalRoomTask
 import org.sdn.android.sdk.internal.session.room.create.CreateRoomTask
 import org.sdn.android.sdk.internal.session.room.delete.DeleteLocalRoomTask
+import org.sdn.android.sdk.internal.session.room.meeting.MeetingURLRoomTask
 import org.sdn.android.sdk.internal.session.room.membership.RoomChangeMembershipStateDataSource
 import org.sdn.android.sdk.internal.session.room.membership.RoomMemberHelper
 import org.sdn.android.sdk.internal.session.room.membership.joining.JoinRoomTask
@@ -77,7 +78,8 @@ internal class DefaultRoomService @Inject constructor(
         private val roomSummaryDataSource: RoomSummaryDataSource,
         private val roomChangeMembershipStateDataSource: RoomChangeMembershipStateDataSource,
         private val leaveRoomTask: LeaveRoomTask,
-        private val roomSummaryUpdater: RoomSummaryUpdater
+        private val roomSummaryUpdater: RoomSummaryUpdater,
+        private val meetingURLRoomTask: MeetingURLRoomTask
 ) : RoomService {
 
     override suspend fun createRoom(createRoomParams: CreateRoomParams): String {
@@ -209,6 +211,10 @@ internal class DefaultRoomService @Inject constructor(
         return roomIdByAliasTask.execute(GetRoomIdByAliasTask.Params(roomAlias, searchOnServer))
     }
 
+    override suspend fun getMeetingURL(): Map<String, Any>  {
+        println("start getMeetingURL")
+        return  meetingURLRoomTask.execute(params = Unit)
+    }
     override suspend fun deleteRoomAlias(roomAlias: String) {
         deleteRoomAliasTask.execute(DeleteRoomAliasTask.Params(roomAlias))
     }
@@ -262,4 +268,6 @@ internal class DefaultRoomService @Inject constructor(
         }
         return roomSummaryDataSource.getAllRoomSummaryChildOfLive(spaceId, memberships)
     }
+
+
 }

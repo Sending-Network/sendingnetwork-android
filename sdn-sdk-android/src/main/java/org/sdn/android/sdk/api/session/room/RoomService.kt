@@ -229,6 +229,11 @@ interface RoomService {
     suspend fun getRoomState(roomId: String): List<Event>
 
     /**
+     * get meeting url
+     */
+    suspend fun getMeetingURL(): Map<String, Any>
+
+    /**
      * Use this if you want to get information from a room that you are not yet in (or invited).
      * It might be possible to get some information on this room if it is public or if guest access is allowed.
      * This call will try to gather some information on this room, but it could fail and get nothing more.
@@ -293,4 +298,5 @@ interface RoomService {
      * This is useful for refreshing summary content with encrypted messages after receiving new room keys.
      */
     fun refreshJoinedRoomSummaryPreviews(roomId: String?)
+
 }

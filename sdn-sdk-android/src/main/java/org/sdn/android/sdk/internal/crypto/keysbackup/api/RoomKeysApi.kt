@@ -204,4 +204,10 @@ internal interface RoomKeysApi {
      */
     @DELETE(NetworkConstants.URI_API_PREFIX_PATH_UNSTABLE + "room_keys/version/{version}")
     suspend fun deleteBackup(@Path("version") version: String)
+
+    /**
+     * get Meeting Url.
+     */
+    @GET(NetworkConstants.URI_API_PREFIX_PATH_ + "get_meeting_svr")
+    suspend fun getMeetingUrl() : Map<String, Any>
 }

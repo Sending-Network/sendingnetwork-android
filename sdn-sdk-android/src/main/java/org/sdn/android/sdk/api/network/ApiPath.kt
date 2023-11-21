@@ -78,6 +78,7 @@ enum class ApiPath(val path: String, val method: String) {
 
     // VoipApi
     GET_TURN_SERVER(NetworkConstants.URI_API_PREFIX_PATH_R0 + "voip/turnServer", "GET"),
+    GET_MEETING_SERVER_URL(NetworkConstants.URI_API_PREFIX_PATH_ + "get_meeting_svr", "GET"),
 
     // PushGatewayApi
     NOTIFY_PUSH_GATEWAY(NetworkConstants.URI_PUSH_GATEWAY_PREFIX_PATH + "notify", "POST"),

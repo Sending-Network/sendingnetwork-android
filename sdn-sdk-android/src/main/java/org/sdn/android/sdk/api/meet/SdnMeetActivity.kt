@@ -35,15 +35,12 @@ class SdnMeetActivity : JitsiMeetActivity() {
     /**
      * Default URL as could be obtained from RestrictionManager
      */
-    private var defaultURL: String? = null
+//    private var defaultURL: String? = null
 
-    // JitsiMeetActivity overrides
-    //
     override fun onCreate(savedInstanceState: Bundle?) {
         JitsiMeet.showSplashScreen(this)
         super.onCreate(null)
     }
-
     override fun initialize() {
         broadcastReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
@@ -52,13 +49,14 @@ class SdnMeetActivity : JitsiMeetActivity() {
                 leave()
                 recreate()
             }
+
         }
+
         registerReceiver(
             broadcastReceiver,
             IntentFilter(Intent.ACTION_APPLICATION_RESTRICTIONS_CHANGED)
         )
-        defaultURL = "https://meet.jit.si"
-        setJitsiMeetConferenceDefaultOptions()
+//        defaultURL = url
         super.initialize()
     }
 
@@ -70,16 +68,8 @@ class SdnMeetActivity : JitsiMeetActivity() {
         super.onDestroy()
     }
 
-    private fun setJitsiMeetConferenceDefaultOptions() {
-        // Set default options
-        val defaultOptions = JitsiMeetConferenceOptions.Builder()
-            .setServerURL(buildURL(defaultURL))
-            .setFeatureFlag("welcomepage.enabled", false)
-            .setFeatureFlag("call-integration.enabled", false)
-            .setFeatureFlag("server-url-change.enabled", !configurationByRestrictions)
-            .build()
-        JitsiMeet.setDefaultConferenceOptions(defaultOptions)
-    }
+
+
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
         if (BuildConfig.DEBUG && keyCode == KeyEvent.KEYCODE_MENU) {
@@ -89,8 +79,7 @@ class SdnMeetActivity : JitsiMeetActivity() {
         return super.onKeyUp(keyCode, event)
     }
 
-    // Helper methods
-    //
+
     private fun buildURL(urlStr: String?): URL? {
         return try {
             URL(urlStr)
@@ -101,10 +90,22 @@ class SdnMeetActivity : JitsiMeetActivity() {
 
     companion object {
 
-        fun launch(context: Context, roomID: String) {
+        private fun setJitsiMeetConferenceDefaultOptions(url: String) {
+            // Set default options
+            val defaultOptions = JitsiMeetConferenceOptions.Builder()
+                .setServerURL( URL(url))
+                .setFeatureFlag("welcomepage.enabled", false)
+                .setFeatureFlag("call-integration.enabled", false)
+                .setFeatureFlag("server-url-change.enabled", true)
+                .build()
+            JitsiMeet.setDefaultConferenceOptions(defaultOptions)
+        }
+        fun launch(context: Context, roomID: String, url: String) {
+            setJitsiMeetConferenceDefaultOptions(url)
             val options = JitsiMeetConferenceOptions.Builder()
                 .setRoom(roomID)
                 .build()
+
             val intent = Intent(context, JitsiMeetActivity::class.java)
             intent.action = "org.jitsi.meet.CONFERENCE"
             intent.putExtra("JitsiMeetConferenceOptions", options)

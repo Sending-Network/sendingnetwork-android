@@ -47,6 +47,8 @@ import org.sdn.android.sdk.internal.session.room.create.CreateLocalRoomStateEven
 import org.sdn.android.sdk.internal.session.room.create.CreateLocalRoomTask
 import org.sdn.android.sdk.internal.session.room.create.CreateRoomFromLocalRoomTask
 import org.sdn.android.sdk.internal.session.room.create.CreateRoomTask
+import org.sdn.android.sdk.internal.session.room.meeting.DefaultMeetingURLRoomTask
+import org.sdn.android.sdk.internal.session.room.meeting.MeetingURLRoomTask
 import org.sdn.android.sdk.internal.session.room.create.DefaultCreateLocalRoomStateEventsTask
 import org.sdn.android.sdk.internal.session.room.create.DefaultCreateLocalRoomTask
 import org.sdn.android.sdk.internal.session.room.create.DefaultCreateRoomFromLocalRoomTask
@@ -246,6 +248,9 @@ internal abstract class RoomModule {
 
     @Binds
     abstract fun bindLeaveRoomTask(task: DefaultLeaveRoomTask): LeaveRoomTask
+
+    @Binds
+    abstract fun bindMeetingURLRoomTask(task: DefaultMeetingURLRoomTask): MeetingURLRoomTask
 
     @Binds
     abstract fun bindMembershipAdminTask(task: DefaultMembershipAdminTask): MembershipAdminTask
