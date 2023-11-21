@@ -21,8 +21,9 @@ import org.sdn.android.sdk.internal.network.GlobalErrorReceiver
 import org.sdn.android.sdk.internal.network.executeRequest
 import org.sdn.android.sdk.internal.task.Task
 import javax.inject.Inject
+import  org.sdn.android.sdk.api.session.meetingResult.GetMeetingUrl
 
-internal interface MeetingURLRoomTask : Task<Unit, Map<String, Any>> {
+internal interface MeetingURLRoomTask : Task<Unit, GetMeetingUrl> {
 
 }
 
@@ -32,7 +33,7 @@ internal class DefaultMeetingURLRoomTask @Inject constructor(
 
 ) : MeetingURLRoomTask {
 
-    override suspend fun execute(params: Unit): Map<String, Any> {
+    override suspend fun execute(params: Unit): GetMeetingUrl {
         println("executeRequest")
         return executeRequest(globalErrorReceiver){
             println("executeRequest")

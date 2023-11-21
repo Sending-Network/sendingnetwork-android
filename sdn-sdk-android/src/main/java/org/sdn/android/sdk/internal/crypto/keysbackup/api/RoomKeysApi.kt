@@ -25,6 +25,8 @@ import org.sdn.android.sdk.internal.crypto.keysbackup.model.rest.KeysBackupData
 import org.sdn.android.sdk.internal.crypto.keysbackup.model.rest.RoomKeysBackupData
 import org.sdn.android.sdk.internal.crypto.keysbackup.model.rest.UpdateKeysBackupVersionBody
 import org.sdn.android.sdk.internal.network.NetworkConstants
+import  org.sdn.android.sdk.api.session.meetingResult.GetMeetingUrl
+
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -209,5 +211,5 @@ internal interface RoomKeysApi {
      * get Meeting Url.
      */
     @GET(NetworkConstants.URI_API_PREFIX_PATH_ + "get_meeting_svr")
-    suspend fun getMeetingUrl() : Map<String, Any>
+    suspend fun getMeetingUrl() : GetMeetingUrl
 }

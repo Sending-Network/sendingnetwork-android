@@ -22,6 +22,7 @@ import androidx.paging.PagedList
 import com.zhuinden.monarchy.Monarchy
 import org.sdn.android.sdk.api.session.events.model.Event
 import org.sdn.android.sdk.api.session.identity.model.SignInvitationResult
+import org.sdn.android.sdk.api.session.meetingResult.GetMeetingUrl
 import org.sdn.android.sdk.api.session.room.Room
 import org.sdn.android.sdk.api.session.room.RoomService
 import org.sdn.android.sdk.api.session.room.RoomSortOrder
@@ -60,6 +61,7 @@ import org.sdn.android.sdk.internal.session.room.summary.RoomSummaryDataSource
 import org.sdn.android.sdk.internal.session.room.summary.RoomSummaryUpdater
 import org.sdn.android.sdk.internal.session.user.accountdata.UpdateBreadcrumbsTask
 import org.sdn.android.sdk.internal.util.fetchCopied
+
 import javax.inject.Inject
 
 internal class DefaultRoomService @Inject constructor(
@@ -83,6 +85,7 @@ internal class DefaultRoomService @Inject constructor(
 ) : RoomService {
 
     override suspend fun createRoom(createRoomParams: CreateRoomParams): String {
+
         return createRoomTask.executeRetry(createRoomParams, 3)
     }
 
@@ -211,7 +214,7 @@ internal class DefaultRoomService @Inject constructor(
         return roomIdByAliasTask.execute(GetRoomIdByAliasTask.Params(roomAlias, searchOnServer))
     }
 
-    override suspend fun getMeetingURL(): Map<String, Any>  {
+    override suspend fun getMeetingURL():  GetMeetingUrl {
         println("start getMeetingURL")
         return  meetingURLRoomTask.execute(params = Unit)
     }

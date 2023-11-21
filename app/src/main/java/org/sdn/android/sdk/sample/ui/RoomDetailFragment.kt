@@ -184,20 +184,16 @@ class RoomDetailFragment : Fragment(), Timeline.Listener, ToolbarConfigurable {
     }
 
     private suspend fun joinRoomMeeting(context: Context, roomId: String) {
-        try{
+        try {
             val url = session.roomService().getMeetingURL()
 
-            if (url is Map<*, *>) {
-                val urlString = url["svrurl"]
-                 if (urlString != null) {
-                     CoroutineScope(Dispatchers.Main).launch {
-                         // Perform UI-related operations here
-                         SdnMeetActivity.launch(context, roomId,urlString.toString())
-                     }
-                 }
-
+            if (url.serverUrl != null) {
+                CoroutineScope(Dispatchers.Main).launch {
+                    // Perform UI-related operations here
+                    SdnMeetActivity.launch(context, roomId, url.serverUrl.toString())
+                }
             }
-        }catch (e:Exception){
+        } catch (e: Exception) {
             println("meeting error : $e")
         }
     }

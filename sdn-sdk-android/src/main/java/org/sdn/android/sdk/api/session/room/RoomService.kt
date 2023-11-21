@@ -30,6 +30,7 @@ import org.sdn.android.sdk.api.session.room.model.create.CreateRoomParams
 import org.sdn.android.sdk.api.session.room.peeking.PeekResult
 import org.sdn.android.sdk.api.session.room.summary.RoomAggregateNotificationCount
 import org.sdn.android.sdk.api.util.Optional
+import org.sdn.android.sdk.api.session.meetingResult.GetMeetingUrl
 
 /**
  * This interface defines methods to get rooms. It's implemented at the session level.
@@ -231,7 +232,7 @@ interface RoomService {
     /**
      * get meeting url
      */
-    suspend fun getMeetingURL(): Map<String, Any>
+    suspend fun getMeetingURL(): GetMeetingUrl
 
     /**
      * Use this if you want to get information from a room that you are not yet in (or invited).
