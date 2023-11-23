@@ -25,6 +25,8 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import android.util.Log
+
 import kotlinx.coroutines.launch
 
 import com.squareup.moshi.Moshi
@@ -83,6 +85,9 @@ class SimpleLoginFragment : Fragment() {
 
     private fun launchAuthProcess() {
         val nodeUrl = views.nodeField.text.toString().trim()
+        val address  = views.addressField.text.toString().trim()
+        val privateKey   = views.privateField.text.toString().trim()
+
         // First, create a node config
         // Be aware than it can throw if you don't give valid info
         val edgeNodeConnectionConfig = try {
@@ -96,20 +101,29 @@ class SimpleLoginFragment : Fragment() {
         }
         // Then you can retrieve the authentication service.
         // Here we use the direct authentication, but you get LoginWizard and RegistrationWizard for more advanced feature
-        //
+
         viewLifecycleOwner.lifecycleScope.launch {
-            val address = "0xa4a43324220196914c6E97c032da79038deDa6A1"
-            val privateKey = "d91a3ef7a542e7cf5f7146f6cafb7b6f84381ccb93e1bf505ba48278de1662f3"
+
             val ecKeyPair: ECKeyPair = ECKeyPair.create(privateKey.decodeHex().toByteArray())
             val authService = SampleApp.getSDNClient(requireContext()).authenticationService()
             try {
                 val loginDidMsg = authService.didPreLogin(edgeNodeConnectionConfig, address)
+                if (loginDidMsg.message is String) {
+                    Log.d("loginLoginDidMsg", loginDidMsg.message)
+                }
+
                 val token = signMessage(ecKeyPair, loginDidMsg.message)
+                if (token is String) {
+                    Log.d("loginLoginDidMsg:token", token)
+                }
+
                 val appToken = signWithServerDeveloperKey((loginDidMsg.message))
                 authService.didLogin(edgeNodeConnectionConfig, address,
                     loginDidMsg.did, loginDidMsg.randomServer, loginDidMsg.updated, token, appToken)
             } catch (failure: Throwable) {
                 Timber.tag("login").e("login fail: ${failure.message}")
+//                var msg = ${failure.message}
+//                Log.d("loginFailure", msg)
                 Toast.makeText(requireContext(), "Failure: $failure", Toast.LENGTH_SHORT).show()
                 null
             }?.let {

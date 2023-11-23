@@ -15,11 +15,43 @@
         android:layout_marginTop="8dp"
         android:layout_marginEnd="24dp"
         android:hint="NodeServer"
+        android:imeActionLabel="Node"
+        android:imeOptions="actionDone"
+        android:selectAllOnFocus="true"
         android:text="https://portal0101.sending.network"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/addressField"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="80dp"
+        android:layout_marginEnd="24dp"
+        android:hint="address"
         android:imeActionLabel="Node"
         android:imeOptions="actionDone"
         android:selectAllOnFocus="true"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/privateField"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="132dp"
+        android:layout_marginEnd="24dp"
+        android:hint="privatekey"
+        android:imeActionLabel="Node"
+        android:imeOptions="actionDone"
+        android:selectAllOnFocus="true"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -36,9 +68,10 @@
         android:text="Login"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.497"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/nodeField"
-        app:layout_constraintVertical_bias="0.2" />
+        app:layout_constraintVertical_bias="0.292" />
 
     <Button
         android:id="@+id/startService"
@@ -72,7 +105,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/startService"
-        app:layout_constraintVertical_bias="0.2" />
+        app:layout_constraintVertical_bias="0.03" />
 
     <ProgressBar
         android:id="@+id/loading"

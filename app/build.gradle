@@ -46,6 +46,7 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.4.2'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'com.google.android.material:material:1.6.1'
+    implementation 'commons-codec:commons-codec:1.15'
 
     implementation project(':sdn-sdk-android')
 //    implementation 'io.github.linx-opennetwork:sdn-sdk-android:0.1.1'

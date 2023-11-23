@@ -45,6 +45,8 @@ import android.util.Log
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+//import com.github.zhanghai.android.kotlin.BaseEncoding
+import org.apache.commons.codec.binary.Base32
 
 class RoomDetailFragment : Fragment(), Timeline.Listener, ToolbarConfigurable {
 
@@ -189,12 +191,29 @@ class RoomDetailFragment : Fragment(), Timeline.Listener, ToolbarConfigurable {
 
             if (url.serverUrl != null) {
                 CoroutineScope(Dispatchers.Main).launch {
-                    // Perform UI-related operations here
-                    SdnMeetActivity.launch(context, roomId, url.serverUrl.toString())
+                    val conferenceId = encodedString(roomId)
+                    println("conferenceId=${conferenceId} ")
+                    println("serverUrl=${url.serverUrl.toString()} ")
+
+                    SdnMeetActivity.launch(context, conferenceId, url.serverUrl.toString())
                 }
             }
         } catch (e: Exception) {
             println("meeting error : $e")
         }
     }
+    private fun encodedString(string: String, padding: Boolean = false): String {
+        val base32 = Base32()
+        val encodedBytes = base32.encode(string.toByteArray())
+
+        val encodedString = String(encodedBytes)
+
+        return if (padding) {
+            encodedString
+        } else {
+            encodedString.replace("=", "")
+        }
+    }
+
+
 }
