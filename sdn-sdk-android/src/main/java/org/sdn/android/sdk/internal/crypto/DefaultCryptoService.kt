@@ -32,6 +32,7 @@ import org.sdn.android.sdk.api.SDNCallback
 import org.sdn.android.sdk.api.SDNCoroutineDispatchers
 import org.sdn.android.sdk.api.NoOpSDNCallback
 import org.sdn.android.sdk.api.auth.UserInteractiveAuthInterceptor
+import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_RATCHET
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_OLM
 import org.sdn.android.sdk.api.crypto.MXCryptoConfig
@@ -79,6 +80,7 @@ import org.sdn.android.sdk.internal.crypto.actions.MegolmSessionDataImporter
 import org.sdn.android.sdk.internal.crypto.actions.SetDeviceVerificationAction
 import org.sdn.android.sdk.internal.crypto.algorithms.IMXEncrypting
 import org.sdn.android.sdk.internal.crypto.algorithms.IMXGroupEncryption
+import org.sdn.android.sdk.internal.crypto.algorithms.megolm.MXRatchetEncryptionFactory
 import org.sdn.android.sdk.internal.crypto.algorithms.megolm.MXMegolmEncryptionFactory
 import org.sdn.android.sdk.internal.crypto.algorithms.megolm.UnRequestedForwardManager
 import org.sdn.android.sdk.internal.crypto.algorithms.olm.MXOlmEncryptionFactory
@@ -170,6 +172,7 @@ internal class DefaultCryptoService @Inject constructor(
     private val megolmSessionDataImporter: MegolmSessionDataImporter,
     private val warnOnUnknownDevicesRepository: WarnOnUnknownDeviceRepository,
         // Repository
+    private val ratchetEncryptionFactory: MXRatchetEncryptionFactory,
     private val megolmEncryptionFactory: MXMegolmEncryptionFactory,
     private val olmEncryptionFactory: MXOlmEncryptionFactory,
         // Tasks
@@ -513,7 +516,7 @@ internal class DefaultCryptoService @Inject constructor(
      * @return the device info, or null if not found / unsupported algorithm / crypto released
      */
     override fun deviceWithIdentityKey(senderKey: String, algorithm: String): CryptoDeviceInfo? {
-        return if (algorithm != MXCRYPTO_ALGORITHM_MEGOLM && algorithm != MXCRYPTO_ALGORITHM_OLM) {
+        return if (algorithm != MXCRYPTO_ALGORITHM_RATCHET && algorithm != MXCRYPTO_ALGORITHM_MEGOLM && algorithm != MXCRYPTO_ALGORITHM_OLM) {
             // We only deal in olm keys
             null
         } else cryptoStore.deviceWithIdentityKey(senderKey)
@@ -646,6 +649,7 @@ internal class DefaultCryptoService @Inject constructor(
         }
 
         val alg: IMXEncrypting? = when (algorithm) {
+            MXCRYPTO_ALGORITHM_RATCHET -> ratchetEncryptionFactory.create(roomId)
             MXCRYPTO_ALGORITHM_MEGOLM -> megolmEncryptionFactory.create(roomId)
             MXCRYPTO_ALGORITHM_OLM -> olmEncryptionFactory.create(roomId)
             else -> null
@@ -676,10 +680,10 @@ internal class DefaultCryptoService @Inject constructor(
     }
 
     /**
-     * Tells if a room is encrypted with MXCRYPTO_ALGORITHM_MEGOLM.
+     * Tells if a room is encrypted.
      *
      * @param roomId the room id
-     * @return true if the room is encrypted with algorithm MXCRYPTO_ALGORITHM_MEGOLM
+     * @return true if the room is encrypted
      */
     override fun isRoomEncrypted(roomId: String): Boolean {
         return cryptoSessionInfoProvider.isRoomEncrypted(roomId)

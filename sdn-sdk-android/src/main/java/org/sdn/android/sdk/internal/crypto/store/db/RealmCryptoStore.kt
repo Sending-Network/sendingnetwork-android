@@ -101,6 +101,7 @@ import org.sdn.android.sdk.internal.util.time.Clock
 import org.matrix.olm.OlmAccount
 import org.matrix.olm.OlmException
 import org.matrix.olm.OlmOutboundGroupSession
+import org.sdn.android.sdk.internal.crypto.store.db.model.CurrentGroupSessionEntity
 import timber.log.Timber
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -817,6 +818,10 @@ internal class RealmCryptoStore @Inject constructor(
 
                 Timber.v("## CRYPTO | shouldShareHistory: ${wrapper.sessionData.sharedHistory} for $key")
                 realm.insertOrUpdate(realmOlmInboundGroupSession)
+                realm.insertOrUpdate(CurrentGroupSessionEntity().apply {
+                    store(wrapper)
+                    backedUp = existing?.backedUp ?: false
+                })
             }
         }
     }
@@ -919,6 +924,32 @@ internal class RealmCryptoStore @Inject constructor(
                     .equalTo(OlmInboundGroupSessionEntityFields.PRIMARY_KEY, key)
                     .findAll()
                     .deleteAllFromRealm()
+        }
+    }
+
+    override fun getCurrentGroupSession(roomId: String): MXInboundMegolmSessionWrapper? {
+        return doWithRealm(realmConfiguration) { realm ->
+            realm.where<CurrentGroupSessionEntity>()
+                .equalTo(OlmInboundGroupSessionEntityFields.ROOM_ID, roomId)
+                .findFirst()
+                ?.toModel()
+        }
+    }
+
+    override fun removeCurrentGroupSession(roomId: String) {
+        doRealmTransaction(realmConfiguration) {
+            it.where<CurrentGroupSessionEntity>()
+                .equalTo(OlmInboundGroupSessionEntityFields.ROOM_ID, roomId)
+                .findAll()
+                .deleteAllFromRealm()
+        }
+    }
+
+    override fun removeAllCurrentGroupSession() {
+        doRealmTransaction(realmConfiguration) {
+            it.where<CurrentGroupSessionEntity>()
+                .findAll()
+                .deleteAllFromRealm()
         }
     }
 

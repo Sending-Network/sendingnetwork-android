@@ -382,6 +382,27 @@ internal interface IMXCryptoStore {
      */
     fun removeInboundGroupSession(sessionId: String, senderKey: String)
 
+    /**
+     * Retrieve the current group session.
+     *
+     * @param roomId the room ID.
+     * @return the current group session.
+     */
+    fun getCurrentGroupSession(roomId: String): MXInboundMegolmSessionWrapper?
+
+    /**
+     * Remove current group session.
+     *
+     * @param roomId the room ID.
+     */
+    fun removeCurrentGroupSession(roomId: String)
+
+    /**
+     * Remove all current group session.
+     *
+     */
+    fun removeAllCurrentGroupSession()
+
     /* ==========================================================================================
      * Keys backup
      * ========================================================================================== */

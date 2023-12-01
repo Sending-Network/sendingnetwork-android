@@ -205,6 +205,8 @@ internal class DeviceListManager @Inject constructor(
         }
 
         if (isUpdated) {
+            Timber.v("## CRYPTO: removeCurrentGroupSession on device changed")
+            cryptoStore.removeAllCurrentGroupSession()
             cryptoStore.saveDeviceTrackingStatuses(deviceTrackingStatuses)
         }
     }

@@ -18,8 +18,10 @@ package org.sdn.android.sdk.internal.crypto
 
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_OLM
+import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_RATCHET
 import org.sdn.android.sdk.internal.crypto.algorithms.IMXEncrypting
 import org.sdn.android.sdk.internal.crypto.algorithms.megolm.MXMegolmEncryptionFactory
+import org.sdn.android.sdk.internal.crypto.algorithms.megolm.MXRatchetEncryptionFactory
 import org.sdn.android.sdk.internal.crypto.algorithms.olm.MXOlmEncryptionFactory
 import org.sdn.android.sdk.internal.crypto.store.IMXCryptoStore
 import org.sdn.android.sdk.internal.session.SessionScope
@@ -28,6 +30,7 @@ import javax.inject.Inject
 @SessionScope
 internal class RoomEncryptorsStore @Inject constructor(
         private val cryptoStore: IMXCryptoStore,
+        private val ratchetEncryptionFactory: MXRatchetEncryptionFactory,
         private val megolmEncryptionFactory: MXMegolmEncryptionFactory,
         private val olmEncryptionFactory: MXOlmEncryptionFactory,
 ) {
@@ -48,6 +51,7 @@ internal class RoomEncryptorsStore @Inject constructor(
                 return@synchronized cache
             } else {
                 val alg: IMXEncrypting? = when (cryptoStore.getRoomAlgorithm(roomId)) {
+                    MXCRYPTO_ALGORITHM_RATCHET -> ratchetEncryptionFactory.create(roomId)
                     MXCRYPTO_ALGORITHM_MEGOLM -> megolmEncryptionFactory.create(roomId)
                     MXCRYPTO_ALGORITHM_OLM -> olmEncryptionFactory.create(roomId)
                     else -> null
