@@ -172,6 +172,7 @@ internal class MXRatchetEncryption(
             sessionId = sessionId!!,
             sessionKey = olmDevice.getSessionKey(sessionId)!!,
             roomId = roomId,
+            algorithm = MXCRYPTO_ALGORITHM_RATCHET,
             senderKey = olmDevice.deviceCurve25519Key!!,
             forwardingCurve25519KeyChain = emptyList(),
             keysClaimed = keysClaimedMap,

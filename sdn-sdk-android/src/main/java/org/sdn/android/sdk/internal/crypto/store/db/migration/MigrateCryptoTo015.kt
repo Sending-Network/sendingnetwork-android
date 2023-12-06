@@ -18,6 +18,7 @@ package org.sdn.android.sdk.internal.crypto.store.db.migration
 
 import io.realm.DynamicRealm
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
+import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_RATCHET
 import org.sdn.android.sdk.internal.crypto.store.db.model.CryptoRoomEntityFields
 import org.sdn.android.sdk.internal.util.database.RealmMigrator
 
@@ -30,7 +31,7 @@ internal class MigrateCryptoTo015(realm: DynamicRealm) : RealmMigrator(realm, 15
                 ?.setNullable(CryptoRoomEntityFields.WAS_ENCRYPTED_ONCE, true)
                 ?.transform {
                     val currentAlgorithm = it.getString(CryptoRoomEntityFields.ALGORITHM)
-                    it.set(CryptoRoomEntityFields.WAS_ENCRYPTED_ONCE, currentAlgorithm == MXCRYPTO_ALGORITHM_MEGOLM)
+                    it.set(CryptoRoomEntityFields.WAS_ENCRYPTED_ONCE, currentAlgorithm == MXCRYPTO_ALGORITHM_MEGOLM || currentAlgorithm == MXCRYPTO_ALGORITHM_RATCHET)
                 }
     }
 }

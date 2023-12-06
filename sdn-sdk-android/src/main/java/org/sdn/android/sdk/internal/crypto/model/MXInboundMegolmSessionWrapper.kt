@@ -16,7 +16,6 @@
 
 package org.sdn.android.sdk.internal.crypto.model
 
-import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
 import org.sdn.android.sdk.api.extensions.tryOrNull
 import org.sdn.android.sdk.internal.crypto.MegolmSessionData
 import org.matrix.olm.OlmInboundGroupSession
@@ -51,7 +50,7 @@ data class MXInboundMegolmSessionWrapper(
                     roomId = sessionData.roomId,
                     sessionId = session.sessionIdentifier(),
                     senderKey = senderKey,
-                    algorithm = MXCRYPTO_ALGORITHM_MEGOLM,
+                    algorithm = sessionData.algorithm,
                     sharedHistory = sessionData.sharedHistory
             )
         } catch (e: Exception) {
@@ -82,6 +81,7 @@ data class MXInboundMegolmSessionWrapper(
                     }
             val data = InboundGroupSessionData(
                     roomId = megolmSessionData.roomId,
+                    algorithm = megolmSessionData.algorithm,
                     senderKey = megolmSessionData.senderKey,
                     keysClaimed = megolmSessionData.senderClaimedKeys,
                     forwardingCurve25519KeyChain = megolmSessionData.forwardingCurve25519KeyChain,

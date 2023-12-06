@@ -17,6 +17,7 @@ package org.sdn.android.sdk.internal.crypto.tasks
 
 import dagger.Lazy
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
+import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_RATCHET
 import org.sdn.android.sdk.api.session.crypto.CryptoService
 import org.sdn.android.sdk.api.session.crypto.model.MXEncryptEventContentResult
 import org.sdn.android.sdk.api.session.crypto.model.MXEventDecryptionResult
@@ -72,7 +73,7 @@ internal class DefaultEncryptEventTask @Inject constructor(
             val safeResult = result.copy(eventContent = modifiedContent)
             // Better handling of local echo, to avoid decrypting transition on remote echo
             // Should I only do it for text messages?
-            val decryptionLocalEcho = if (result.eventContent["algorithm"] == MXCRYPTO_ALGORITHM_MEGOLM) {
+            val decryptionLocalEcho = if (arrayOf(MXCRYPTO_ALGORITHM_MEGOLM, MXCRYPTO_ALGORITHM_RATCHET).contains(result.eventContent["algorithm"])) {
                 MXEventDecryptionResult(
                         clearEvent = Event(
                                 type = localEvent.type,

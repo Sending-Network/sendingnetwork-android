@@ -611,6 +611,7 @@ internal class MXOlmDevice @Inject constructor(
             sessionId: String,
             sessionKey: String,
             roomId: String,
+            algorithm: String,
             senderKey: String,
             forwardingCurve25519KeyChain: List<String>,
             keysClaimed: Map<String, String>,
@@ -695,6 +696,7 @@ internal class MXOlmDevice @Inject constructor(
         val candidateSessionData = InboundGroupSessionData(
                 senderKey = senderKey,
                 roomId = roomId,
+                algorithm = algorithm,
                 keysClaimed = keysClaimed,
                 forwardingCurve25519KeyChain = forwardingCurve25519KeyChain,
                 sharedHistory = sharedHistory,

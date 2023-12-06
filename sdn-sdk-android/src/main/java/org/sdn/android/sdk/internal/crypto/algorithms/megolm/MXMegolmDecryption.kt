@@ -17,6 +17,7 @@
 package org.sdn.android.sdk.internal.crypto.algorithms.megolm
 
 import dagger.Lazy
+import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
 import org.sdn.android.sdk.api.crypto.MXCryptoConfig
 import org.sdn.android.sdk.api.extensions.orFalse
 import org.sdn.android.sdk.api.logger.LoggerTag
@@ -244,7 +245,6 @@ internal class MXMegolmDecryption(
             val wasNotRequested = cryptoStore.getOutgoingRoomKeyRequest(
                     roomId = forwardedRoomKeyContent.roomId.orEmpty(),
                     sessionId = forwardedRoomKeyContent.sessionId.orEmpty(),
-                    algorithm = forwardedRoomKeyContent.algorithm.orEmpty(),
                     senderKey = forwardedRoomKeyContent.senderKey.orEmpty(),
             ).isEmpty()
 
@@ -293,6 +293,7 @@ internal class MXMegolmDecryption(
                 sessionId = roomKeyContent.sessionId,
                 sessionKey = roomKeyContent.sessionKey,
                 roomId = roomKeyContent.roomId,
+                algorithm = MXCRYPTO_ALGORITHM_MEGOLM,
                 senderKey = sessionInitiatorSenderKey,
                 forwardingCurve25519KeyChain = forwardingCurve25519KeyChain,
                 keysClaimed = keysClaimed,

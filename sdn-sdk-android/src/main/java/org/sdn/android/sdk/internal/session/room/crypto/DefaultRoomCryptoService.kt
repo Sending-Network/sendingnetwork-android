@@ -20,6 +20,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
+import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_RATCHET
 import org.sdn.android.sdk.api.session.crypto.CryptoService
 import org.sdn.android.sdk.api.session.events.model.EventType
 import org.sdn.android.sdk.api.session.room.crypto.RoomCryptoService
@@ -57,12 +58,13 @@ internal class DefaultRoomCryptoService @AssistedInject constructor(
     }
 
     override suspend fun enableEncryption(algorithm: String, force: Boolean) {
+        val supportedAlgorithm = arrayOf(MXCRYPTO_ALGORITHM_MEGOLM, MXCRYPTO_ALGORITHM_RATCHET)
         when {
-            (!force && isEncrypted() && encryptionAlgorithm() == MXCRYPTO_ALGORITHM_MEGOLM) -> {
+            (!force && isEncrypted() && supportedAlgorithm.contains(encryptionAlgorithm())) -> {
                 throw IllegalStateException("Encryption is already enabled for this room")
             }
-            (!force && algorithm != MXCRYPTO_ALGORITHM_MEGOLM) -> {
-                throw InvalidParameterException("Only MXCRYPTO_ALGORITHM_MEGOLM algorithm is supported")
+            (!force && !supportedAlgorithm.contains(algorithm)) -> {
+                throw InvalidParameterException("Only MXCRYPTO_ALGORITHM_MEGOLM or MXCRYPTO_ALGORITHM_RATCHET algorithm is supported")
             }
             else -> {
                 val params = SendStateTask.Params(

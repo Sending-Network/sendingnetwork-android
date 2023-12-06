@@ -17,6 +17,7 @@
 package org.sdn.android.sdk.internal.database.mapper
 
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
+import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_RATCHET
 import org.sdn.android.sdk.api.session.crypto.model.RoomEncryptionTrustLevel
 import org.sdn.android.sdk.api.session.room.model.RoomEncryptionAlgorithm
 import org.sdn.android.sdk.api.session.room.model.RoomJoinRules
@@ -75,7 +76,7 @@ internal class RoomSummaryMapper @Inject constructor(
                 isEncrypted = roomSummaryEntity.isEncrypted,
                 encryptionEventTs = roomSummaryEntity.encryptionEventTs,
                 breadcrumbsIndex = roomSummaryEntity.breadcrumbsIndex,
-                roomEncryptionTrustLevel = if (roomSummaryEntity.isEncrypted && roomSummaryEntity.e2eAlgorithm != MXCRYPTO_ALGORITHM_MEGOLM) {
+                roomEncryptionTrustLevel = if (roomSummaryEntity.isEncrypted && !arrayOf(MXCRYPTO_ALGORITHM_MEGOLM, MXCRYPTO_ALGORITHM_RATCHET).contains(roomSummaryEntity.e2eAlgorithm)) {
                     RoomEncryptionTrustLevel.E2EWithUnsupportedAlgorithm
                 } else roomSummaryEntity.roomEncryptionTrustLevel,
                 inviterId = roomSummaryEntity.inviterId,
@@ -114,6 +115,7 @@ internal class RoomSummaryMapper @Inject constructor(
                     // I should probably use #hasEncryptorClassForAlgorithm but it says it supports
                     // OLM which is some legacy? Now only megolm allowed in rooms
                     MXCRYPTO_ALGORITHM_MEGOLM -> RoomEncryptionAlgorithm.Megolm
+                    MXCRYPTO_ALGORITHM_RATCHET -> RoomEncryptionAlgorithm.Ratchet
                     else -> RoomEncryptionAlgorithm.UnsupportedAlgorithm(alg)
                 }
         )

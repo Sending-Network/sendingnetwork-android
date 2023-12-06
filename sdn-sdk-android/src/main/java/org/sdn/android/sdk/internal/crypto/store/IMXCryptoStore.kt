@@ -459,7 +459,7 @@ internal interface IMXCryptoStore {
      */
     fun getOutgoingRoomKeyRequest(requestBody: RoomKeyRequestBody): OutgoingKeyRequest?
     fun getOutgoingRoomKeyRequest(requestId: String): OutgoingKeyRequest?
-    fun getOutgoingRoomKeyRequest(roomId: String, sessionId: String, algorithm: String, senderKey: String): List<OutgoingKeyRequest>
+    fun getOutgoingRoomKeyRequest(roomId: String, sessionId: String, senderKey: String): List<OutgoingKeyRequest>
 
     /**
      * Look for an existing outgoing room key request, and if none is found, add a new one.

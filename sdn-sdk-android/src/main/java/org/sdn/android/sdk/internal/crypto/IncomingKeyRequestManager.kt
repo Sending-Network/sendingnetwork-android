@@ -26,6 +26,7 @@ import kotlinx.coroutines.withContext
 import org.sdn.android.sdk.api.SDNCoroutineDispatchers
 import org.sdn.android.sdk.api.auth.data.Credentials
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
+import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_RATCHET
 import org.sdn.android.sdk.api.crypto.MXCryptoConfig
 import org.sdn.android.sdk.api.extensions.tryOrNull
 import org.sdn.android.sdk.api.logger.LoggerTag
@@ -85,6 +86,7 @@ internal class IncomingKeyRequestManager @Inject constructor(
             val roomId: String,
             val senderKey: String,
             val sessionId: String,
+            val algorithm: String,
             val action: MegolmRequestAction
     ) {
         fun shortDbgString() = "Request from $requestingUserId|$requestingDeviceId for session $sessionId in room $roomId"
@@ -97,7 +99,7 @@ internal class IncomingKeyRequestManager @Inject constructor(
         val sessionId = body.sessionId ?: return null
         val senderKey = body.senderKey ?: return null
         val requestId = this.requestId ?: return null
-        if (body.algorithm != MXCRYPTO_ALGORITHM_MEGOLM) return null
+        if (!arrayOf(MXCRYPTO_ALGORITHM_MEGOLM, MXCRYPTO_ALGORITHM_RATCHET).contains(body.algorithm)) return null
         val action = when (this.action) {
             "request" -> MegolmRequestAction.Request
             "request_cancellation" -> MegolmRequestAction.Cancel
@@ -110,6 +112,7 @@ internal class IncomingKeyRequestManager @Inject constructor(
                 roomId = roomId,
                 senderKey = senderKey,
                 sessionId = sessionId,
+                algorithm = body.algorithm!!,
                 action = action
         )
     }
@@ -217,7 +220,7 @@ internal class IncomingKeyRequestManager @Inject constructor(
                 request.roomId,
                 request.sessionId,
                 request.senderKey,
-                MXCRYPTO_ALGORITHM_MEGOLM,
+                request.algorithm,
                 request.requestingUserId,
                 request.requestingDeviceId
         )
@@ -225,7 +228,7 @@ internal class IncomingKeyRequestManager @Inject constructor(
         val roomAlgorithm = // withContext(coroutineDispatchers.crypto) {
                 cryptoStore.getRoomAlgorithm(request.roomId)
 //        }
-        if (roomAlgorithm != MXCRYPTO_ALGORITHM_MEGOLM) {
+        if (!arrayOf(MXCRYPTO_ALGORITHM_MEGOLM, MXCRYPTO_ALGORITHM_RATCHET).contains(roomAlgorithm)) {
             // strange we received a request for a room that is not encrypted
             // maybe a broken state?
             Timber.tag(loggerTag.value).w("Received a key request in a room with unsupported alg:$roomAlgorithm , req:${request.shortDbgString()}")
@@ -285,7 +288,7 @@ internal class IncomingKeyRequestManager @Inject constructor(
                             deviceId = requestingDevice.deviceId,
                             requestId = request.requestId,
                             requestBody = RoomKeyRequestBody(
-                                    algorithm = MXCRYPTO_ALGORITHM_MEGOLM,
+                                    algorithm = request.algorithm,
                                     senderKey = request.senderKey,
                                     sessionId = request.sessionId,
                                     roomId = request.roomId
@@ -308,7 +311,7 @@ internal class IncomingKeyRequestManager @Inject constructor(
         val withHeldContent = RoomKeyWithHeldContent(
                 roomId = request.roomId,
                 senderKey = request.senderKey,
-                algorithm = MXCRYPTO_ALGORITHM_MEGOLM,
+                algorithm = request.algorithm,
                 sessionId = request.sessionId,
                 codeString = code.value,
                 fromDevice = credentials.deviceId
@@ -331,7 +334,7 @@ internal class IncomingKeyRequestManager @Inject constructor(
                     roomId = request.roomId,
                     sessionId = request.sessionId,
                     senderKey = request.senderKey,
-                    algorithm = MXCRYPTO_ALGORITHM_MEGOLM,
+                    algorithm = request.algorithm,
                     code = code,
                     userId = request.requestingUserId,
                     deviceId = request.requestingDeviceId
@@ -358,6 +361,7 @@ internal class IncomingKeyRequestManager @Inject constructor(
                 roomId = request.requestBody.roomId,
                 senderKey = request.requestBody.senderKey,
                 sessionId = request.requestBody.sessionId,
+                algorithm = request.requestBody.algorithm ?: "",
                 action = MegolmRequestAction.Request
         )
         val requestingDevice =
@@ -429,7 +433,7 @@ internal class IncomingKeyRequestManager @Inject constructor(
                     validRequest.roomId,
                     validRequest.sessionId,
                     validRequest.senderKey,
-                    MXCRYPTO_ALGORITHM_MEGOLM,
+                    validRequest.algorithm,
                     requestingDevice.userId,
                     requestingDevice.deviceId,
                     chainIndex

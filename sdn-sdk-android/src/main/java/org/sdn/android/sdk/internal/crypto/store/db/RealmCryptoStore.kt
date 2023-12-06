@@ -27,6 +27,7 @@ import io.realm.Sort
 import io.realm.kotlin.createObject
 import io.realm.kotlin.where
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
+import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_RATCHET
 import org.sdn.android.sdk.api.extensions.tryOrNull
 import org.sdn.android.sdk.api.logger.LoggerTag
 import org.sdn.android.sdk.api.session.crypto.GlobalCryptoConfig
@@ -674,7 +675,7 @@ internal class RealmCryptoStore @Inject constructor(
                 // store anyway the new algorithm, but mark the room
                 // as having been encrypted once whatever, this can never
                 // go back to false
-                if (algorithm == MXCRYPTO_ALGORITHM_MEGOLM) {
+                if (algorithm == MXCRYPTO_ALGORITHM_MEGOLM || algorithm == MXCRYPTO_ALGORITHM_RATCHET) {
                     entity.wasEncryptedOnce = true
                 }
             }
@@ -1209,7 +1210,7 @@ internal class RealmCryptoStore @Inject constructor(
         }.firstOrNull()
     }
 
-    override fun getOutgoingRoomKeyRequest(roomId: String, sessionId: String, algorithm: String, senderKey: String): List<OutgoingKeyRequest> {
+    override fun getOutgoingRoomKeyRequest(roomId: String, sessionId: String, senderKey: String): List<OutgoingKeyRequest> {
         // TODO this annoying we have to load all
         return monarchy.fetchAllCopiedSync { realm ->
             realm.where<OutgoingKeyRequestEntity>()
@@ -1218,8 +1219,7 @@ internal class RealmCryptoStore @Inject constructor(
         }.map {
             it.toOutgoingKeyRequest()
         }.filter {
-            it.requestBody?.algorithm == algorithm &&
-                    it.requestBody?.senderKey == senderKey
+            it.requestBody?.senderKey == senderKey
         }
     }
 
@@ -1743,7 +1743,7 @@ internal class RealmCryptoStore @Inject constructor(
     override fun addWithHeldMegolmSession(withHeldContent: RoomKeyWithHeldContent) {
         val roomId = withHeldContent.roomId ?: return
         val sessionId = withHeldContent.sessionId ?: return
-        if (withHeldContent.algorithm != MXCRYPTO_ALGORITHM_MEGOLM) return
+        if (!arrayOf(MXCRYPTO_ALGORITHM_MEGOLM, MXCRYPTO_ALGORITHM_RATCHET).contains(withHeldContent.algorithm)) return
         doRealmTransaction(realmConfiguration) { realm ->
             WithHeldSessionEntity.getOrCreate(realm, roomId, sessionId)?.let {
                 it.code = withHeldContent.code

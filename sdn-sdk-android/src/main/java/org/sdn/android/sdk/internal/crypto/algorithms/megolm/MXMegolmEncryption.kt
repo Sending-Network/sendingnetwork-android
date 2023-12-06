@@ -176,6 +176,7 @@ internal class MXMegolmEncryption(
                 sessionId = sessionId!!,
                 sessionKey = olmDevice.getSessionKey(sessionId)!!,
                 roomId = roomId,
+                algorithm = MXCRYPTO_ALGORITHM_MEGOLM,
                 senderKey = olmDevice.deviceCurve25519Key!!,
                 forwardingCurve25519KeyChain = emptyList(),
                 keysClaimed = keysClaimedMap,

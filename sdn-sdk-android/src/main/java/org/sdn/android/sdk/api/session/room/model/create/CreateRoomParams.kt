@@ -159,6 +159,7 @@ open class CreateRoomParams {
     var historyVisibility: RoomHistoryVisibility? = null
 
     fun enableEncryption() {
+        // TODO add support for MXCRYPTO_ALGORITHM_RATCHET
         algorithm = MXCRYPTO_ALGORITHM_MEGOLM
     }
 
