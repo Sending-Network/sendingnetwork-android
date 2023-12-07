@@ -24,5 +24,5 @@ data class TimelineEventSenderWrapper(private val senderInfo: SenderInfo) : IUse
 
     override fun getName() = senderInfo.disambiguatedDisplayName
 
-    override fun getAvatar() = senderInfo.avatarUrl
+    override fun getAvatar() = if (!senderInfo.avatarUrl.isNullOrEmpty()) senderInfo.avatarUrl else "https://static.sending.me/beam/70/${senderInfo.userId}?colors=FC774B,FFB197,B27AFF,DAC2FB,F0E7FD&square=true"
 }

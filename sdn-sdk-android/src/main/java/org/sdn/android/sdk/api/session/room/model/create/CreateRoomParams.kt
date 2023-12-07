@@ -19,6 +19,7 @@ package org.sdn.android.sdk.api.session.room.model.create
 import android.net.Uri
 import com.squareup.moshi.JsonClass
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
+import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_RATCHET
 import org.sdn.android.sdk.api.session.identity.ThreePid
 import org.sdn.android.sdk.api.session.room.model.GuestAccess
 import org.sdn.android.sdk.api.session.room.model.PowerLevelsContent
@@ -159,8 +160,7 @@ open class CreateRoomParams {
     var historyVisibility: RoomHistoryVisibility? = null
 
     fun enableEncryption() {
-        // TODO add support for MXCRYPTO_ALGORITHM_RATCHET
-        algorithm = MXCRYPTO_ALGORITHM_MEGOLM
+        algorithm = if (isDirect == true)  MXCRYPTO_ALGORITHM_MEGOLM else MXCRYPTO_ALGORITHM_RATCHET
     }
 
     var roomVersion: String? = null

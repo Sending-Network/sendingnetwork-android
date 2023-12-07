@@ -41,12 +41,15 @@ import org.sdn.android.sdk.sample.databinding.FragmentRoomDetailBinding
 import org.sdn.android.sdk.sample.utils.*
 
 import org.sdn.android.sdk.api.meet.SdnMeetActivity
-import android.util.Log
-import kotlinx.coroutines.GlobalScope
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-//import com.github.zhanghai.android.kotlin.BaseEncoding
 import org.apache.commons.codec.binary.Base32
+import org.sdn.android.sdk.api.session.room.model.RoomSummary
+import org.sdn.android.sdk.sample.R
+import org.sdn.android.sdk.sample.ui.dialog.PasswordDialogFragment
 
 class RoomDetailFragment : Fragment(), Timeline.Listener, ToolbarConfigurable {
 
@@ -149,11 +152,39 @@ class RoomDetailFragment : Fragment(), Timeline.Listener, ToolbarConfigurable {
             }
         }
 
-        views.toolbarBtnVideo.setOnClickListener {
-            Log.d("getMeeting","start")
-            GlobalScope.launch {
-                joinRoomMeeting(context!!, roomID)
+        setHasOptionsMenu(true)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.room_detail_options, menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.invite -> {
+                val dlg = PasswordDialogFragment.newInstance("")
+                dlg.show(childFragmentManager, "")
+                true
             }
+            R.id.meeting -> {
+                room?.roomId?.let {
+                    lifecycleScope.launch {
+                        joinRoomMeeting(requireContext(), it)
+                    }
+                }
+                true
+            }
+            R.id.leave -> {
+                room?.roomId?.let {
+                    lifecycleScope.launch {
+                        session.roomService().leaveRoom(it)
+                        showRoomList()
+                    }
+                }
+                true
+            }
+
+            else -> super.onOptionsItemSelected(item)
         }
     }
 
@@ -215,5 +246,11 @@ class RoomDetailFragment : Fragment(), Timeline.Listener, ToolbarConfigurable {
         }
     }
 
-
+    private fun showRoomList() {
+        (activity as MainActivity).supportFragmentManager
+            .beginTransaction()
+            .addToBackStack(null)
+            .replace(R.id.fragmentContainer, RoomListFragment())
+            .commit()
+    }
 }

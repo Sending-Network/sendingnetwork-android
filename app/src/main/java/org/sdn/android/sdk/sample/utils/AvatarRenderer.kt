@@ -41,6 +41,27 @@ class AvatarRenderer(private val frag: Fragment, private val sdnItemColorProvide
         GlideApp.with(frag).load(resolvedUrl).fallback(R.drawable.default_avatar).into(imageView)
     }
 
+    fun renderDrawable(letter: String?, imageView: ImageView) {
+
+        if (letter?.startsWith("http") == true) {
+            render(letter, imageView)
+            return
+        }
+
+        val color = sdnItemColorProvider.getColorForRoom(letter ?: "")
+        val drawable = TextDrawable.builder()
+            .beginConfig()
+            .bold()
+            .endConfig()
+            .buildRoundRect(letter, color, 5)
+        val nullStr: String? = null
+        Picasso.get()
+            .load(nullStr)
+            .placeholder(drawable)
+            .error(R.drawable.default_avatar)
+            .into(imageView)
+    }
+
     fun render(SDNItem: SDNItem, imageView: ImageView) {
         val resolvedUrl = resolvedUrl(SDNItem.avatarUrl)
         val placeholder = getPlaceholderDrawable(SDNItem)

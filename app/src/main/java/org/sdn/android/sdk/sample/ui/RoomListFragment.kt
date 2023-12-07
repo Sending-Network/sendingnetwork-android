@@ -16,9 +16,9 @@
 
 package org.sdn.android.sdk.sample.ui
 
-import android.content.DialogInterface
-import android.content.res.Resources
+import android.annotation.SuppressLint
 import android.os.Bundle
+import android.os.Environment
 import android.view.*
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -26,7 +26,6 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.stfalcon.chatkit.commons.ImageLoader
 import com.stfalcon.chatkit.dialogs.DialogsListAdapter
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.sdn.android.sdk.api.session.room.model.Membership
 import org.sdn.android.sdk.api.session.room.model.RoomSummary
@@ -38,18 +37,47 @@ import org.sdn.android.sdk.sample.SessionHolder
 import org.sdn.android.sdk.sample.data.RoomSummaryDialogWrapper
 import org.sdn.android.sdk.sample.databinding.FragmentRoomListBinding
 import org.sdn.android.sdk.sample.formatter.RoomListDateFormatter
+import org.sdn.android.sdk.sample.ui.dialog.PasswordDialogFragment
 import org.sdn.android.sdk.sample.utils.AvatarRenderer
 import org.sdn.android.sdk.sample.utils.SDNItemColorProvider
+import timber.log.Timber
+import java.io.File
+import java.io.FileOutputStream
 
 class RoomListFragment : Fragment(), ToolbarConfigurable {
 
     private val session = SessionHolder.currentSession!!
+    private val exportListenerKey = "export"
+    private val importListenerKey = "import"
+    private val e2eBackupDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+    private val e2eBackupFile = "e2e_xx_keys.txt"
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        childFragmentManager.setFragmentResultListener(exportListenerKey, this) { _, bundle ->
+            val password = bundle.getString("password") ?: "default"
+            lifecycleScope.launch {
+                val exportedBytes = session.cryptoService().exportRoomKeys(password)
+                saveFileToExternalStorage(e2eBackupFile, exportedBytes)
+            }
+        }
+
+        childFragmentManager.setFragmentResultListener(importListenerKey, this) { _, bundle ->
+            val password = bundle.getString("password") ?: "default"
+            lifecycleScope.launch {
+                val importedBytes = readFileFromExternalStorage(e2eBackupFile)
+                val result = session.cryptoService().importRoomKeys(importedBytes, password, null)
+                Timber.i("totalNumberOfKeys: ${result.totalNumberOfKeys}, successfullyNumberOfImportedKeys: ${result.successfullyNumberOfImportedKeys}")
+            }
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?,
-    ): View? {
+    ): View {
         _views = FragmentRoomListBinding.inflate(inflater, container, false)
         return views.root
     }
@@ -63,19 +91,24 @@ class RoomListFragment : Fragment(), ToolbarConfigurable {
     }
 
     private val imageLoader = ImageLoader { imageView, url, _ ->
-        avatarRenderer.render(url, imageView)
+        avatarRenderer.renderDrawable(url, imageView)
     }
     private val roomAdapter = DialogsListAdapter<RoomSummaryDialogWrapper>(imageLoader)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         configureToolbar(views.toolbar, displayBack = false)
-11
+
         views.createRoomButton.setOnClickListener {
             val userId = views.otherUserIdField.text.toString().trim()
 
             viewLifecycleOwner.lifecycleScope.launch {
-                session.roomService().createDirectRoom(otherUserId = userId)
+//                session.roomService().createDirectRoom(otherUserId = userId)
+                session.roomService().createRoom(CreateRoomParams()
+                    .apply {
+                        invitedUserIds.add(userId)
+                        enableEncryption()
+                    })
             }
         //            GlobalScope.launch {
 //                println("contact-signOut out")
@@ -99,13 +132,13 @@ class RoomListFragment : Fragment(), ToolbarConfigurable {
                 builder.setMessage("Do you want to join this room?")
                 builder.setPositiveButton("Join") { _, _ ->
                     viewLifecycleOwner.lifecycleScope.launch {
-                        session.roomService().joinRoom(it.roomSummary.roomId);
+                        session.roomService().joinRoom(it.roomSummary.roomId)
                         showRoomDetail(it.roomSummary)
                     }
                 }
                 builder.setNegativeButton("Cancel", null)
                 val dialog = builder.create()
-                dialog.setOnShowListener { _ ->
+                dialog.setOnShowListener {
                     dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(resources.getColor(R.color.dark_gray))
                     dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(resources.getColor(R.color.dark_gray))
                 }
@@ -141,6 +174,16 @@ class RoomListFragment : Fragment(), ToolbarConfigurable {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
+            R.id.export_key -> {
+                val dlg = PasswordDialogFragment.newInstance(exportListenerKey)
+                dlg.show(childFragmentManager, "export")
+                true
+            }
+            R.id.import_key -> {
+                val dlg = PasswordDialogFragment.newInstance(importListenerKey)
+                dlg.show(childFragmentManager, "import")
+                true
+            }
             R.id.logout -> {
                 signOut()
                 true
@@ -185,5 +228,21 @@ class RoomListFragment : Fragment(), ToolbarConfigurable {
             RoomSummaryDialogWrapper(it)
         }
         roomAdapter.setItems(sortedRoomSummaryList)
+    }
+
+    @SuppressLint("SetWorldReadable")
+    private fun saveFileToExternalStorage(fileName: String, data: ByteArray) {
+        val targetFile = File(e2eBackupDir, fileName)
+        targetFile.setReadable(true, false)
+        data.inputStream().use { input ->
+            FileOutputStream(targetFile).use { output ->
+                input.copyTo(output)
+            }
+        }
+    }
+
+    private fun readFileFromExternalStorage(fileName: String): ByteArray {
+        val targetFile = File(e2eBackupDir, fileName)
+        return targetFile.readBytes()
     }
 }
