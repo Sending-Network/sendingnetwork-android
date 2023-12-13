@@ -883,6 +883,7 @@ internal class MXOlmDevice @Inject constructor(
             throw MXCryptoError.Base(MXCryptoError.ErrorType.INBOUND_SESSION_MISMATCH_ROOM_ID, reason)
         }
         val internalKey = inboundGroupSession.export(0)
+        Timber.i("aes decrypt with sessionId: $sessionId, key: $internalKey, ciphertext: $body")
         val decryptedMessage = AESUtil.decrypt(internalKey.toByteArray().copyOfRange(0, 16), body)
 
         val payload = try {

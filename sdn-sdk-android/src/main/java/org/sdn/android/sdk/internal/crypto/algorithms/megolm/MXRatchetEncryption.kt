@@ -426,6 +426,7 @@ internal class MXRatchetEncryption(
         }
         val internalKey = currentSession.export(0)
         val payloadString = convertToUTF8(JsonCanonicalizer.getCanonicalJson(Map::class.java, payloadJson))
+        Timber.i("aes decrypt with sessionId: ${session.sessionId}, key: $internalKey, cleartext: $payloadString")
         val ciphertext = AESUtil.encrypt(internalKey.toByteArray().copyOfRange(0, 16), payloadString)
 
         val map = HashMap<String, Any>()

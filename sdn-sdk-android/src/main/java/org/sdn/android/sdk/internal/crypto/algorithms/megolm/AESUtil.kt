@@ -13,7 +13,6 @@ class AESUtil {
         private const val cipherMode = "AES/CBC/PKCS7Padding" //algorithm/mode/padding
 
         fun encrypt(key: ByteArray, cleartext: String): String {
-            Timber.i("AES encrypt with key: ${key.decodeToString()}")
             if (TextUtils.isEmpty(cleartext)) {
                 return cleartext
             }
@@ -26,7 +25,6 @@ class AESUtil {
         }
 
         fun decrypt(key: ByteArray, ciphertext: String): String {
-            Timber.i("AES decrypt with key: ${key.decodeToString()}")
             if (TextUtils.isEmpty(ciphertext)) {
                 return ciphertext
             }
