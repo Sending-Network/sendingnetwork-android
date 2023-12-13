@@ -235,6 +235,12 @@ internal class IncomingKeyRequestManager @Inject constructor(
             return
         }
 
+        // share key if algorithm is MXCRYPTO_ALGORITHM_RATCHET
+        if (roomAlgorithm == MXCRYPTO_ALGORITHM_RATCHET) {
+            shareMegolmKey(request, requestingDevice, null)
+            return
+        }
+
         // Is it for one of our sessions?
         if (request.requestingUserId == credentials.userId) {
             Timber.tag(loggerTag.value).v("handling request from own user: megolm session ${request.sessionId}")
