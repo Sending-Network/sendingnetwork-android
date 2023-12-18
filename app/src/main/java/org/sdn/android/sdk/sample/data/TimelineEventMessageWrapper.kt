@@ -45,4 +45,8 @@ data class TimelineEventMessageWrapper(private val timelineEvent: TimelineEvent)
     override fun getUser() = TimelineEventSenderWrapper(timelineEvent.senderInfo)
 
     override fun getCreatedAt() = Date(timelineEvent.root.originServerTs ?: 0)
+
+    fun getTimelineEvent() : TimelineEvent {
+        return timelineEvent
+    }
 }

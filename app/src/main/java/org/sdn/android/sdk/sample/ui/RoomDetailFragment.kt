@@ -17,6 +17,7 @@
 package org.sdn.android.sdk.sample.ui
 
 import android.content.Context
+import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -44,11 +45,15 @@ import org.sdn.android.sdk.api.meet.SdnMeetActivity
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import org.apache.commons.codec.binary.Base32
-import org.sdn.android.sdk.api.session.room.model.RoomSummary
+import org.sdn.android.sdk.api.session.events.model.toModel
+import org.sdn.android.sdk.api.session.room.model.message.MessageContent
 import org.sdn.android.sdk.sample.R
+import org.sdn.android.sdk.sample.data.TimelineEventMessageWrapper
 import org.sdn.android.sdk.sample.ui.dialog.PasswordDialogFragment
 
 class RoomDetailFragment : Fragment(), Timeline.Listener, ToolbarConfigurable {
@@ -115,6 +120,18 @@ class RoomDetailFragment : Fragment(), Timeline.Listener, ToolbarConfigurable {
             }
         })
 
+        adapter.setOnMessageLongClickListener {
+            val event = (it as TimelineEventMessageWrapper).getTimelineEvent()
+             with(AlertDialog.Builder(requireContext())) {
+//                setTitle("Androidly Alert")
+                setMessage("Request decryption key?")
+                setPositiveButton(R.string.ok) { _: DialogInterface, _: Int ->
+                    session.cryptoService().reRequestRoomKeyForEvent(event.root)
+                }
+                setNegativeButton(R.string.cancel, null)
+                show()
+            }
+        }
         views.timelineEventList.setAdapter(adapter)
         views.timelineEventList.itemAnimator = null
         views.timelineEventList.addOnScrollListener(RecyclerScrollMoreListener(views.timelineEventList.layoutManager as LinearLayoutManager) {
