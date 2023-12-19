@@ -85,8 +85,9 @@ class SimpleLoginFragment : Fragment() {
 
     private fun launchAuthProcess() {
         val nodeUrl = views.nodeField.text.toString().trim()
-        val address  = views.addressField.text.toString().trim()
-        val privateKey   = views.privateField.text.toString().trim()
+        var address  = views.addressField.text.toString().trim()
+        var privateKey   = views.privateField.text.toString().trim()
+
 
         // First, create a node config
         // Be aware than it can throw if you don't give valid info

@@ -18,7 +18,7 @@
         android:imeActionLabel="Node"
         android:imeOptions="actionDone"
         android:selectAllOnFocus="true"
-        android:text="https://portal0101.sending.network"
+        android:text="https://beginner.sending.network"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />

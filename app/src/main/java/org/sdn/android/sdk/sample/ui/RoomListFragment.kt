@@ -75,14 +75,18 @@ class RoomListFragment : Fragment(), ToolbarConfigurable {
             val userId = views.otherUserIdField.text.toString().trim()
 
             viewLifecycleOwner.lifecycleScope.launch {
-                session.roomService().createDirectRoom(otherUserId = userId)
+//                session.roomService().createDirectRoom(otherUserId = userId)
             }
-        //            GlobalScope.launch {
+//            println("contact-begin")
+//
+//            GlobalScope.launch {
 //                println("contact-signOut out")
-//                val dictionary = mutableMapOf("contact_id" to "@sdn_7dc1c0acc5c08ddd57d06a4420ade8fd54206da1:7dc1c0acc5c08ddd57d06a4420ade8fd54206da1", "is_room" to 1)
+//                val tagsArray = arrayOf("star")
+//                val dictionary = mutableMapOf("contact_id" to "@sdn_6f8aef95bc0bfc6c7de5467f18443599c30de8a1:6f8aef95bc0bfc6c7de5467f18443599c30de8a1", "is_room" to 0,"tags" to tagsArray)
+//                println("contact-dictionary")
 //
 //                try{
-//                    val response = session.userService().removeContact(parameter = dictionary)
+//                    val response = session.userService().addContact(parameter = dictionary)
 //                    println("contact response=$response")
 //                }catch (t :Throwable){
 //                    val errorMessage = t.toString()
