@@ -656,7 +656,7 @@ internal class DefaultCryptoService @Inject constructor(
         }
 
         if (alg != null) {
-            roomEncryptorsStore.put(roomId, alg)
+            roomEncryptorsStore.put(roomId, algorithm!!, alg)
         }
 
         // if encryption was not previously enabled in this room, we will have been
@@ -733,7 +733,9 @@ internal class DefaultCryptoService @Inject constructor(
         // moved to crypto scope to have uptodate values
         cryptoCoroutineScope.launch(coroutineDispatchers.crypto) {
             val userIds = getRoomUserIds(roomId)
-            var alg = roomEncryptorsStore.get(roomId)
+            val memberNumThreshold = 10
+            val algId = if (userIds.count() > memberNumThreshold) MXCRYPTO_ALGORITHM_RATCHET else MXCRYPTO_ALGORITHM_MEGOLM
+            var alg = roomEncryptorsStore.get(roomId, algId)
             if (alg == null) {
                 val algorithm = getEncryptionAlgorithm(roomId)
                 if (algorithm != null) {
@@ -742,6 +744,7 @@ internal class DefaultCryptoService @Inject constructor(
                     }
                 }
             }
+
             val safeAlgorithm = alg
             if (safeAlgorithm != null) {
                 val t0 = clock.epochMillis()

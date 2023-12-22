@@ -1194,8 +1194,7 @@ internal class RealmCryptoStore @Inject constructor(
         }.map {
             it.toOutgoingKeyRequest()
         }.firstOrNull {
-            it.requestBody?.algorithm == requestBody.algorithm &&
-                    it.requestBody?.roomId == requestBody.roomId &&
+            it.requestBody?.roomId == requestBody.roomId &&
                     it.requestBody?.senderKey == requestBody.senderKey &&
                     it.requestBody?.sessionId == requestBody.sessionId
         }
@@ -1314,8 +1313,7 @@ internal class RealmCryptoStore @Inject constructor(
                         }
                     }
                     .firstOrNull {
-                        it.requestBody?.algorithm == requestBody.algorithm &&
-                                it.requestBody?.sessionId == requestBody.sessionId &&
+                        it.requestBody?.sessionId == requestBody.sessionId &&
                                 it.requestBody?.senderKey == requestBody.senderKey &&
                                 it.requestBody?.roomId == requestBody.roomId
                     }
@@ -1374,8 +1372,7 @@ internal class RealmCryptoStore @Inject constructor(
                     .equalTo(OutgoingKeyRequestEntityFields.MEGOLM_SESSION_ID, sessionId)
                     .findAll().firstOrNull { entity ->
                         entity.toOutgoingKeyRequest().let {
-                            it.requestBody?.senderKey == senderKey &&
-                                    it.requestBody?.algorithm == algorithm
+                            it.requestBody?.senderKey == senderKey
                         }
                     }?.apply {
                         event.senderId?.let { addReply(it, fromDevice, event) }

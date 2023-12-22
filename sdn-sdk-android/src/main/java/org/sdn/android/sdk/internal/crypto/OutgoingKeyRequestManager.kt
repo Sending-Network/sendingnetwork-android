@@ -132,7 +132,7 @@ internal class OutgoingKeyRequestManager @Inject constructor(
 
     private fun ratchetIndexForMessage(event: Event): Int? {
         val encryptedContent = event.content.toModel<EncryptedEventContent>() ?: return null
-        if (!arrayOf(MXCRYPTO_ALGORITHM_MEGOLM, MXCRYPTO_ALGORITHM_RATCHET).contains(encryptedContent.algorithm)) return null
+        if (encryptedContent.algorithm != MXCRYPTO_ALGORITHM_MEGOLM) return null
         return encryptedContent.ciphertext?.fromBase64()?.inputStream()?.reader()?.let {
             tryOrNull {
                 val megolmVersion = it.read()
