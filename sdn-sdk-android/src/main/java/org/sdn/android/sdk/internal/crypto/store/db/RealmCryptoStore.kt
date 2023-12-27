@@ -103,6 +103,7 @@ import org.matrix.olm.OlmAccount
 import org.matrix.olm.OlmException
 import org.matrix.olm.OlmOutboundGroupSession
 import org.sdn.android.sdk.internal.crypto.store.db.model.CurrentGroupSessionEntity
+import org.sdn.android.sdk.internal.crypto.store.db.model.CurrentGroupSessionEntityFields
 import timber.log.Timber
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -668,6 +669,16 @@ internal class RealmCryptoStore @Inject constructor(
         }
     }
 
+    override fun getAllCryptoRooms(): List<String> {
+        return doWithRealm(realmConfiguration) {
+            it.where<CryptoRoomEntity>()
+                .findAll()
+                .mapNotNull { cryptoRoom ->
+                    cryptoRoom.roomId
+                }
+        }
+    }
+
     override fun storeRoomAlgorithm(roomId: String, algorithm: String?) {
         doRealmTransaction(realmConfiguration) {
             CryptoRoomEntity.getOrCreate(it, roomId).let { entity ->
@@ -946,9 +957,10 @@ internal class RealmCryptoStore @Inject constructor(
         }
     }
 
-    override fun removeAllCurrentGroupSession() {
+    override fun removeAllCurrentGroupSession(roomIds: Array<String>) {
         doRealmTransaction(realmConfiguration) {
             it.where<CurrentGroupSessionEntity>()
+                .`in`(CurrentGroupSessionEntityFields.ROOM_ID, roomIds)
                 .findAll()
                 .deleteAllFromRealm()
         }

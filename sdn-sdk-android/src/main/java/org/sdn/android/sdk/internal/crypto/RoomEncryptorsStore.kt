@@ -47,7 +47,7 @@ internal class RoomEncryptorsStore @Inject constructor(
     fun get(roomId: String, algId: String = MXCRYPTO_ALGORITHM_MEGOLM): IMXEncrypting? {
         return synchronized(roomEncryptors) {
             val cache = roomEncryptors[roomId]
-            if (cache != null) {
+            if (cache != null && cache.containsKey(algId)) {
                 return@synchronized cache[algId]
             } else {
                 val alg: IMXEncrypting? = when (algId) {

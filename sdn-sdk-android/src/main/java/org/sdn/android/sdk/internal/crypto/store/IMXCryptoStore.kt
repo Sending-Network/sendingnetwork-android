@@ -264,6 +264,8 @@ internal interface IMXCryptoStore {
 
     fun saveMyDevicesInfo(info: List<DeviceInfo>)
 
+    fun getAllCryptoRooms(): List<String>
+
     /**
      * Store the crypto algorithm for a room.
      *
@@ -401,7 +403,7 @@ internal interface IMXCryptoStore {
      * Remove all current group session.
      *
      */
-    fun removeAllCurrentGroupSession()
+    fun removeAllCurrentGroupSession(roomIds: Array<String>)
 
     /* ==========================================================================================
      * Keys backup
