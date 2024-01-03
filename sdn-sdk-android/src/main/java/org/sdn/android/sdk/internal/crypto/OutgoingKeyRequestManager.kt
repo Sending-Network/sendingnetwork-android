@@ -85,6 +85,12 @@ internal class OutgoingKeyRequestManager @Inject constructor(
     private val requestDiscardedBecauseAlreadySentThatCouldBeTriedWithBackup = Stack<Pair<String, String>>()
 
     fun requestKeyForEvent(event: Event, force: Boolean) {
+
+        if (!force && event.originServerTs != null && event.originServerTs < deviceListManager.getSessionLoginTime()) {
+            Timber.i("skip requesting keys for old event: ${event.eventId}")
+            return
+        }
+
         val (targets, body) = getRoomKeyRequestTargetForEvent(event) ?: return
         val index = ratchetIndexForMessage(event) ?: 0
         postRoomKeyRequest(body, targets, index, force)

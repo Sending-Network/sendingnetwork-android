@@ -74,6 +74,10 @@ internal class DeviceListManager @Inject constructor(
         }
     }
 
+    fun getSessionLoginTime() : Long {
+        return credentials.loginTime
+    }
+
     private fun dispatchDeviceChange(users: List<String>) {
         synchronized(deviceChangeListeners) {
             deviceChangeListeners.forEach {
