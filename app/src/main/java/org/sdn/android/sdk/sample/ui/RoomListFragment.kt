@@ -195,7 +195,7 @@ class RoomListFragment : Fragment(), ToolbarConfigurable {
     private fun signOut() {
         lifecycleScope.launch {
             try {
-                session.signOutService().signOut(true)
+                session.signOutService().signOut(signOutFromHomeserver = true, deleteCrypto = false)
             } catch (failure: Throwable) {
                 activity?.let {
                     Toast.makeText(it, "Failure: $failure", Toast.LENGTH_SHORT).show()

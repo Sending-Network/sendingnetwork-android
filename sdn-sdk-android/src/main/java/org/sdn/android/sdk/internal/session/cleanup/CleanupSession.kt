@@ -59,7 +59,7 @@ internal class CleanupSession @Inject constructor(
         sessionManager.stopSession(sessionId)
     }
 
-    suspend fun cleanup() {
+    suspend fun cleanup(deleteCrypto: Boolean = false) {
         val sessionRealmCount = Realm.getGlobalInstanceCount(realmSessionConfiguration)
         val cryptoRealmCount = Realm.getGlobalInstanceCount(realmCryptoConfiguration)
         Timber.d("Realm instance ($sessionRealmCount - $cryptoRealmCount)")
@@ -73,8 +73,10 @@ internal class CleanupSession @Inject constructor(
         Timber.d("Cleanup: clear session data...")
         clearSessionDataTask.execute(Unit)
 
-        Timber.d("Cleanup: clear crypto data...")
-        clearCryptoDataTask.execute(Unit)
+        if (deleteCrypto) {
+            Timber.d("Cleanup: clear crypto data...")
+            clearCryptoDataTask.execute(Unit)
+        }
 
         Timber.d("Cleanup: clear the database keys")
         realmKeysUtils.clear(SessionModule.getKeyAlias(userMd5))
