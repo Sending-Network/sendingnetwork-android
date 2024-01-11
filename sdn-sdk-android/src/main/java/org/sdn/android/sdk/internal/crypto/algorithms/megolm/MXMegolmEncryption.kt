@@ -319,7 +319,9 @@ internal class MXMegolmEncryption(
                     continue
                 }
                 Timber.tag(loggerTag.value).v("shareUserDevicesKey() : Add to share keys contentMap for $userId:$deviceID")
-                contentMap.setObject(userId, deviceID, messageEncrypter.encryptMessage(payload, listOf(sessionResult.deviceInfo)))
+                val encryptedMessage = messageEncrypter.encryptMessage(payload, listOf(sessionResult.deviceInfo))
+                encryptedMessage.traceId = sessionInfo.sessionId
+                contentMap.setObject(userId, deviceID, encryptedMessage)
                 haveTargets = true
             }
         }

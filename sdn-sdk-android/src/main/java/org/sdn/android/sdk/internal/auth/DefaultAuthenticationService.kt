@@ -461,11 +461,13 @@ internal class DefaultAuthenticationService @Inject constructor(
     override suspend fun didPreLogin(
         edgeNodeConnectionConfig: EdgeNodeConnectionConfig,
         address: String,
+        deviceId: String
     ): LoginDidMsg {
         return didPreLoginTask.execute(
             DidPreLoginTask.Params(
                 edgeNodeConnectionConfig = edgeNodeConnectionConfig,
-                address = address
+                address = address,
+                deviceId = deviceId
             )
         )
     }
