@@ -427,6 +427,7 @@ internal class IncomingKeyRequestManager @Inject constructor(
         )
 
         val encodedPayload = messageEncrypter.encryptMessage(payloadJson, listOf(requestingDevice))
+        encodedPayload.traceId = validRequest.sessionId
         val sendToDeviceMap = MXUsersDevicesMap<Any>()
         sendToDeviceMap.setObject(requestingDevice.userId, requestingDevice.deviceId, encodedPayload)
         Timber.tag(loggerTag.value).d("reshareKey() : try sending session ${validRequest.sessionId} to ${requestingDevice.shortDebugString()}")

@@ -543,6 +543,7 @@ internal class MXMegolmEncryption(
         )
 
         val encodedPayload = messageEncrypter.encryptMessage(payloadJson, listOf(deviceInfo))
+        encodedPayload.traceId = groupSessionId
         val sendToDeviceMap = MXUsersDevicesMap<Any>()
         sendToDeviceMap.setObject(userId, deviceId, encodedPayload)
         Timber.tag(loggerTag.value).i("reshareKey() : sending session $groupSessionId to $userId:$deviceId")
