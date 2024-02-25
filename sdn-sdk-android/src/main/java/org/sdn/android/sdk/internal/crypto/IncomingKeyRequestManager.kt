@@ -225,19 +225,10 @@ internal class IncomingKeyRequestManager @Inject constructor(
                 request.requestingDeviceId
         )
 
-        val roomAlgorithm = // withContext(coroutineDispatchers.crypto) {
-                cryptoStore.getRoomAlgorithm(request.roomId)
-//        }
-        if (!arrayOf(MXCRYPTO_ALGORITHM_MEGOLM, MXCRYPTO_ALGORITHM_RATCHET).contains(roomAlgorithm)) {
+        if (!arrayOf(MXCRYPTO_ALGORITHM_MEGOLM, MXCRYPTO_ALGORITHM_RATCHET).contains(request.algorithm)) {
             // strange we received a request for a room that is not encrypted
             // maybe a broken state?
-            Timber.tag(loggerTag.value).w("Received a key request in a room with unsupported alg:$roomAlgorithm , req:${request.shortDbgString()}")
-            return
-        }
-
-        // share key if algorithm is MXCRYPTO_ALGORITHM_RATCHET
-        if (roomAlgorithm == MXCRYPTO_ALGORITHM_RATCHET) {
-            shareMegolmKey(request, requestingDevice, null)
+            Timber.tag(loggerTag.value).w("Received a key request in a room with unsupported alg:${request.algorithm} , req:${request.shortDbgString()}")
             return
         }
 
@@ -255,7 +246,8 @@ internal class IncomingKeyRequestManager @Inject constructor(
                 // we share from the earliest known chain index
                 shareMegolmKey(request, requestingDevice, null)
             } else {
-                shareIfItWasPreviouslyShared(request, requestingDevice)
+                Timber.tag(loggerTag.value).w("requesting device is not verified, still share the key")
+                shareMegolmKey(request, requestingDevice, null)
             }
         } else {
             if (cryptoConfig.limitRoomKeyRequestsToMyDevices) {
@@ -265,9 +257,10 @@ internal class IncomingKeyRequestManager @Inject constructor(
             Timber.tag(loggerTag.value).v("handling request from other user: megolm session ${request.sessionId}")
             if (requestingDevice.isBlocked) {
                 // it's blocked, so send a withheld code
+                Timber.tag(loggerTag.value).w("requesting device is blocked, will not share the key")
                 sendWithheldForRequest(request, WithHeldCode.BLACKLISTED)
             } else {
-                shareIfItWasPreviouslyShared(request, requestingDevice)
+                shareMegolmKey(request, requestingDevice, null)
             }
         }
     }

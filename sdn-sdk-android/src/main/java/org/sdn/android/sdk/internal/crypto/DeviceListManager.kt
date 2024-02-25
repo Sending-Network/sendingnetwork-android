@@ -211,21 +211,6 @@ internal class DeviceListManager @Inject constructor(
         if (isUpdated) {
             cryptoStore.saveDeviceTrackingStatuses(deviceTrackingStatuses)
         }
-
-        // removeCurrentGroupSession on device changed
-        val sharedRoomIds = ArrayList<String>()
-        for (roomId in cryptoStore.getAllCryptoRooms()) {
-            for (userId in cryptoSessionInfoProvider.getRoomUserIds(roomId, true)) {
-                if (changed.contains(userId) || left.contains((userId))) {
-                    sharedRoomIds.add(roomId)
-                }
-            }
-        }
-        if (sharedRoomIds.isNotEmpty()) {
-            Timber.v("## CRYPTO: removeCurrentGroupSession on device changed: $sharedRoomIds")
-            cryptoStore.removeAllCurrentGroupSession(sharedRoomIds.toTypedArray())
-        }
-
     }
 
     /**

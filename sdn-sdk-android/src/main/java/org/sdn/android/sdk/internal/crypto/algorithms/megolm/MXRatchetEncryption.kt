@@ -26,7 +26,6 @@ import org.sdn.android.sdk.api.logger.LoggerTag
 import org.sdn.android.sdk.api.session.crypto.MXCryptoError
 import org.sdn.android.sdk.api.session.crypto.model.CryptoDeviceInfo
 import org.sdn.android.sdk.api.session.crypto.model.MXUsersDevicesMap
-import org.sdn.android.sdk.api.session.crypto.model.UnknownInfo.sessionId
 import org.sdn.android.sdk.api.session.crypto.model.forEach
 import org.sdn.android.sdk.api.session.events.model.Content
 import org.sdn.android.sdk.api.session.events.model.EventType
@@ -37,6 +36,7 @@ import org.sdn.android.sdk.api.session.room.model.message.MessageType
 import org.sdn.android.sdk.internal.crypto.DeviceListManager
 import org.sdn.android.sdk.internal.crypto.InboundGroupSessionHolder
 import org.sdn.android.sdk.internal.crypto.MXOlmDevice
+import org.sdn.android.sdk.internal.crypto.MegolmSessionData
 import org.sdn.android.sdk.internal.crypto.actions.EnsureOlmSessionsForDevicesAction
 import org.sdn.android.sdk.internal.crypto.actions.MessageEncrypter
 import org.sdn.android.sdk.internal.crypto.algorithms.IMXEncrypting
@@ -76,11 +76,11 @@ internal class MXRatchetEncryption(
     // OutboundSessionInfo. Null if we haven't yet started setting one up. Note
     // that even if this is non-null, it may not be ready for use (in which
     // case outboundSession.shareOperation will be non-null.)
-    private var currentSession: MXOutboundSessionInfo? = null
+    private var outboundSession: MXOutboundSessionInfo? = null
 
     init {
         // restore existing outbound session if any
-        currentSession = olmDevice.restoreOutboundGroupSessionForRoom(roomId)
+        outboundSession = olmDevice.restoreOutboundGroupSessionForRoom(roomId)
     }
 
     override suspend fun encryptEventContent(
@@ -138,7 +138,7 @@ internal class MXRatchetEncryption(
     }
 
     override fun discardSessionKey() {
-        currentSession = null
+        outboundSession = null
         olmDevice.discardOutboundGroupSessionForRoom(roomId)
     }
 
@@ -185,6 +185,7 @@ internal class MXRatchetEncryption(
 
         return MXOutboundSessionInfo(
             sessionId = sessionId,
+            senderKey = olmDevice.deviceCurve25519Key!!,
             sharedWithHelper = SharedWithHelper(roomId, sessionId, cryptoStore),
             clock = clock,
             sharedHistory = sharedHistory
@@ -198,28 +199,50 @@ internal class MXRatchetEncryption(
      */
     private suspend fun ensureCurrentSession(devicesInRoom: MXUsersDevicesMap<CryptoDeviceInfo>): MXOutboundSessionInfo {
         Timber.tag(loggerTag.value).v("ensureCurrentSession roomId:$roomId")
+        val safeSession: MXOutboundSessionInfo
+        val sharedHistory = cryptoStore.shouldShareHistory(roomId)
         val currentGroupSession = olmDevice.getCurrentGroupSession(roomId)
         val sessionId = currentGroupSession?.wrapper?.safeSessionId
-        val safeSession: MXOutboundSessionInfo
-        var needShare = true
-        if (sessionId != null) {
-            val sharedHistory = cryptoStore.shouldShareHistory(roomId)
+        val isNewSession: Boolean
+        val exportedSession: MegolmSessionData?
+
+        if (currentGroupSession != null && sessionId != null) {
+            Timber.tag(loggerTag.value).i("ensureCurrentSession() : reuse existing session $sessionId in $roomId")
             safeSession = MXOutboundSessionInfo(
                 sessionId = sessionId,
+                senderKey = currentGroupSession.wrapper.senderKey,
                 sharedWithHelper = SharedWithHelper(roomId, sessionId, cryptoStore),
                 clock = clock,
                 sharedHistory = sharedHistory
             )
-            // if the session is not created by us then no need to share.
-            if (olmDevice.getSessionKey(sessionId) == null) {
-                needShare = false
+            isNewSession = false
+            exportedSession = currentGroupSession.mutex.withLock {
+                currentGroupSession.wrapper.exportKeys()
             }
-        } else {
-            safeSession = prepareNewSessionInRoom()
-        }
 
-        if (!needShare) {
-            return safeSession
+        } else {
+            var session = outboundSession
+            if (session == null) {
+                session = prepareNewSessionInRoom()
+                outboundSession = session
+            } else {
+                olmDevice.addInboundGroupSession(
+                    sessionId = session.sessionId,
+                    sessionKey = olmDevice.getSessionKey(session.sessionId)!!,
+                    roomId = roomId,
+                    algorithm = MXCRYPTO_ALGORITHM_RATCHET,
+                    senderKey = olmDevice.deviceCurve25519Key!!,
+                    forwardingCurve25519KeyChain = emptyList(),
+                    keysClaimed = mapOf("ed25519" to olmDevice.deviceEd25519Key!!),
+                    exportFormat = false,
+                    sharedHistory = sharedHistory,
+                    trusted = true
+                )
+            }
+            safeSession = session
+            isNewSession = true
+            exportedSession = null
+            Timber.tag(loggerTag.value).i("ensureCurrentSession() : use new session ${session.sessionId} in $roomId")
         }
 
         val shareMap = HashMap<String, MutableList<CryptoDeviceInfo>>()/* userId */
@@ -236,7 +259,18 @@ internal class MXRatchetEncryption(
         }
         val devicesCount = shareMap.entries.fold(0) { acc, new -> acc + new.value.size }
         Timber.tag(loggerTag.value).d("roomId:$roomId found $devicesCount devices without megolm session(${safeSession.sessionId})")
-        shareKey(safeSession, shareMap)
+
+        // measure time consumed
+        val ts = clock.epochMillis()
+        if (isNewSession) {
+            shareKey(safeSession, null, shareMap)
+        } else {
+            // offload to io thread
+            cryptoCoroutineScope.launch(coroutineDispatchers.io) {
+                shareKey(safeSession, exportedSession, shareMap)
+            }
+        }
+        Timber.tag(loggerTag.value).d("shareKey in $roomId done in ${clock.epochMillis() - ts} millis")
         return safeSession
     }
 
@@ -248,6 +282,7 @@ internal class MXRatchetEncryption(
      */
     private suspend fun shareKey(
         session: MXOutboundSessionInfo,
+        export: MegolmSessionData?,
         devicesByUsers: Map<String, List<CryptoDeviceInfo>>
     ) {
         // nothing to send, the task is done
@@ -265,10 +300,11 @@ internal class MXRatchetEncryption(
                 break
             }
         }
+
         Timber.tag(loggerTag.value).v("shareKey() ; sessionId<${session.sessionId}> userId ${subMap.keys}")
-        shareUserDevicesKey(session, subMap)
+        shareUserDevicesKey(session, export, subMap)
         val remainingDevices = devicesByUsers - subMap.keys
-        shareKey(session, remainingDevices)
+        shareKey(session, export, remainingDevices)
     }
 
     /**
@@ -279,24 +315,34 @@ internal class MXRatchetEncryption(
      */
     private suspend fun shareUserDevicesKey(
         sessionInfo: MXOutboundSessionInfo,
+        exportedSessionData: MegolmSessionData?,
         devicesByUser: Map<String, List<CryptoDeviceInfo>>
     ) {
-        val sessionKey = olmDevice.getSessionKey(sessionInfo.sessionId) ?: return Unit.also {
-            Timber.tag(loggerTag.value).v("shareUserDevicesKey() Failed to share session, failed to export")
-        }
-        val chainIndex = olmDevice.getMessageIndex(sessionInfo.sessionId)
+        val chainIndex: Int
 
-        val payload = mapOf(
-            "type" to EventType.ROOM_KEY,
-            "content" to mapOf(
-                "algorithm" to MXCRYPTO_ALGORITHM_RATCHET,
-                "room_id" to roomId,
-                "session_id" to sessionInfo.sessionId,
-                "session_key" to sessionKey,
-                "chain_index" to chainIndex,
-                "org.matrix.msc3061.shared_history" to sessionInfo.sharedHistory
+        val payload = if (exportedSessionData != null) {
+            chainIndex = 0
+            mapOf(
+                "type" to EventType.FORWARDED_ROOM_KEY,
+                "content" to exportedSessionData
             )
-        )
+        } else {
+            chainIndex = olmDevice.getMessageIndex(sessionInfo.sessionId)
+            val sessionKey = olmDevice.getSessionKey(sessionInfo.sessionId) ?: return Unit.also {
+                Timber.tag(loggerTag.value).e("shareUserDevicesKey() Failed to share session, failed to export")
+            }
+            mapOf(
+                "type" to EventType.ROOM_KEY,
+                "content" to mapOf(
+                    "algorithm" to MXCRYPTO_ALGORITHM_RATCHET,
+                    "room_id" to roomId,
+                    "session_id" to sessionInfo.sessionId,
+                    "session_key" to sessionKey,
+                    "chain_index" to chainIndex,
+                    "org.matrix.msc3061.shared_history" to sessionInfo.sharedHistory
+                )
+            )
+        }
 
         var t0 = clock.epochMillis()
         Timber.tag(loggerTag.value).v("shareUserDevicesKey() : starts")
@@ -421,7 +467,7 @@ internal class MXRatchetEncryption(
         payloadJson["type"] = eventType
         payloadJson["content"] = eventContent
 
-        val sessionWrapper = olmDevice.getCurrentGroupSession(roomId)?.wrapper ?: throw Exception("no current session for room: $roomId")
+        val sessionWrapper = olmDevice.getInboundGroupSession(session.sessionId, session.senderKey, roomId).wrapper
         val currentSession = sessionWrapper.session
         if (currentSession.sessionIdentifier() != session.sessionId) {
             throw Exception("current session $session.sessionId is invalid for room: $roomId")

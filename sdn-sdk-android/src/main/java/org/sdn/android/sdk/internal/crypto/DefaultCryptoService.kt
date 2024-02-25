@@ -854,7 +854,7 @@ internal class DefaultCryptoService @Inject constructor(
             when (event.getClearType()) {
                 EventType.ROOM_KEY, EventType.FORWARDED_ROOM_KEY -> {
                     // Keys are imported directly, not waiting for end of sync
-                    onRoomKeyEvent(event)
+                    onRoomKeyEvent(event, true)
                 }
                 EventType.REQUEST_SECRET -> {
                     secretShareManager.handleSecretRequest(event)
@@ -867,7 +867,10 @@ internal class DefaultCryptoService @Inject constructor(
                         // very silly, it won't work because an Olm session cannot send
                         // messages to itself.
                         if (req.requestingDeviceId != deviceId) { // ignore self requests
-                            event.senderId?.let { incomingKeyRequestManager.addNewIncomingRequest(it, req) }
+                            event.senderId?.let {
+                                ensureRequestingUserDevice(it, req.requestingDeviceId)
+                                incomingKeyRequestManager.addNewIncomingRequest(it, req)
+                            }
                         }
                     }
                 }
@@ -883,6 +886,20 @@ internal class DefaultCryptoService @Inject constructor(
             }
         }
         liveEventManager.get().dispatchOnLiveToDevice(event)
+    }
+
+    private suspend fun ensureRequestingUserDevice(userId: String?, deviceId: String?) : CryptoDeviceInfo? {
+        if (userId == null || deviceId == null) {
+            return null
+        }
+        var requestingDevice = cryptoStore.getUserDevice(userId, deviceId)
+        if (requestingDevice == null) {
+            Timber.tag(loggerTag.value).w("ensureRequestingUserDevice() : Unknown device: $userId | $deviceId")
+
+            val deviceMap = deviceListManager.downloadKeys(listOf(userId), true)
+            requestingDevice = deviceMap.getObject(userId, deviceId)
+        }
+        return requestingDevice
     }
 
     /**

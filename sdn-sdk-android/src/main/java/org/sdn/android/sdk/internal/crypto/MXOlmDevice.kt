@@ -517,6 +517,7 @@ internal class MXOlmDevice @Inject constructor(
 
             return MXOutboundSessionInfo(
                     sessionId = sessionId,
+                    senderKey = this.deviceCurve25519Key,
                     sharedWithHelper = SharedWithHelper(roomId, sessionId, store),
                     clock = clock,
                     creationTime = restoredOutboundGroupSession.creationTime,

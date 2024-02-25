@@ -189,6 +189,7 @@ internal class MXMegolmEncryption(
 
         return MXOutboundSessionInfo(
                 sessionId = sessionId,
+                senderKey = olmDevice.deviceCurve25519Key,
                 sharedWithHelper = SharedWithHelper(roomId, sessionId, cryptoStore),
                 clock = clock,
                 sharedHistory = sharedHistory
