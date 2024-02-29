@@ -29,6 +29,7 @@ import org.sdn.android.sdk.api.util.awaitCallback
 import org.sdn.android.sdk.internal.database.mapper.ContentMapper
 import org.sdn.android.sdk.internal.session.room.send.LocalEchoRepository
 import org.sdn.android.sdk.internal.task.Task
+import timber.log.Timber
 import javax.inject.Inject
 
 internal interface EncryptEventTask : Task<EncryptEventTask.Params, Event> {
@@ -47,6 +48,12 @@ internal class DefaultEncryptEventTask @Inject constructor(
     override suspend fun execute(params: EncryptEventTask.Params): Event {
         // don't want to wait for any query
         // if (!params.crypto.isRoomEncrypted(params.roomId)) return params.event
+
+        val memberNum = cryptoService.get().getRoomUserIds(params.roomId).size
+        if (memberNum > 200) {
+            Timber.i("## EncryptEventTask: skip encrypting event for room ${params.roomId} with member count $memberNum")
+            return params.event
+        }
         val localEvent = params.event
         require(localEvent.eventId != null)
         require(localEvent.type != null)

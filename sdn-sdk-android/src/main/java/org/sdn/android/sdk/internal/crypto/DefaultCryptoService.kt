@@ -1001,7 +1001,7 @@ internal class DefaultCryptoService @Inject constructor(
         }
     }
 
-    private fun getRoomUserIds(roomId: String): List<String> {
+    override fun getRoomUserIds(roomId: String): List<String> {
         val encryptForInvitedMembers = isEncryptionEnabledForInvitedUser() &&
                 shouldEncryptForInvitedMembers(roomId)
         return cryptoSessionInfoProvider.getRoomUserIds(roomId, encryptForInvitedMembers)
