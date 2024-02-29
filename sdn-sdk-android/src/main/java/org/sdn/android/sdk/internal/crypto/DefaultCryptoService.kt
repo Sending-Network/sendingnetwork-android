@@ -742,7 +742,7 @@ internal class DefaultCryptoService @Inject constructor(
         // moved to crypto scope to have uptodate values
         cryptoCoroutineScope.launch(coroutineDispatchers.crypto) {
             val userIds = getRoomUserIds(roomId)
-            val memberNumThreshold = 200
+            val memberNumThreshold = 1
             val algId = if (userIds.count() > memberNumThreshold) MXCRYPTO_ALGORITHM_RATCHET else MXCRYPTO_ALGORITHM_MEGOLM
             var alg = roomEncryptorsStore.get(roomId, algId)
             if (alg == null) {
@@ -1001,7 +1001,7 @@ internal class DefaultCryptoService @Inject constructor(
         }
     }
 
-    private fun getRoomUserIds(roomId: String): List<String> {
+    override fun getRoomUserIds(roomId: String): List<String> {
         val encryptForInvitedMembers = isEncryptionEnabledForInvitedUser() &&
                 shouldEncryptForInvitedMembers(roomId)
         return cryptoSessionInfoProvider.getRoomUserIds(roomId, encryptForInvitedMembers)
