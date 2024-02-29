@@ -17,6 +17,7 @@ package org.sdn.android.sdk.internal.crypto.api
 
 import org.sdn.android.sdk.api.session.crypto.model.DeviceInfo
 import org.sdn.android.sdk.api.session.crypto.model.DevicesListResponse
+import org.sdn.android.sdk.api.session.sync.model.ToDeviceSyncResponse
 import org.sdn.android.sdk.internal.crypto.model.rest.DeleteDeviceParams
 import org.sdn.android.sdk.internal.crypto.model.rest.DeleteDevicesParams
 import org.sdn.android.sdk.internal.crypto.model.rest.KeyChangesResponse
@@ -26,6 +27,7 @@ import org.sdn.android.sdk.internal.crypto.model.rest.KeysQueryBody
 import org.sdn.android.sdk.internal.crypto.model.rest.KeysQueryResponse
 import org.sdn.android.sdk.internal.crypto.model.rest.KeysUploadBody
 import org.sdn.android.sdk.internal.crypto.model.rest.KeysUploadResponse
+import org.sdn.android.sdk.internal.crypto.model.rest.PullKeysBody
 import org.sdn.android.sdk.internal.crypto.model.rest.SendToDeviceBody
 import org.sdn.android.sdk.internal.crypto.model.rest.SignatureUploadResponse
 import org.sdn.android.sdk.internal.crypto.model.rest.UpdateDeviceInfoBody
@@ -173,4 +175,7 @@ internal interface CryptoApi {
             @Query("from") oldToken: String,
             @Query("to") newToken: String
     ): KeyChangesResponse
+
+    @POST(NetworkConstants.URI_API_PREFIX_PATH_R0 + "get_olm_event")
+    suspend fun pullRoomKeys(@Body body: PullKeysBody): ToDeviceSyncResponse
 }

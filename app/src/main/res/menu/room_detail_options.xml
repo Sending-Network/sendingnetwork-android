@@ -3,16 +3,16 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/export_key"
-        android:title="@string/export_key"
+        android:id="@+id/invite"
+        android:title="@string/invite"
         app:showAsAction="never" />
     <item
-        android:id="@+id/import_key"
-        android:title="@string/import_key"
+        android:id="@+id/meeting"
+        android:title="@string/meeting"
         app:showAsAction="never" />
     <item
-        android:id="@+id/logout"
-        android:title="@string/logout"
+        android:id="@+id/leave"
+        android:title="@string/leave"
         app:showAsAction="never" />
 
 </menu>

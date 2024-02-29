@@ -16,6 +16,7 @@
 
 package org.sdn.android.sdk.sample.ui
 
+import android.content.Context.MODE_PRIVATE
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -106,8 +107,11 @@ class SimpleLoginFragment : Fragment() {
 
             val ecKeyPair: ECKeyPair = ECKeyPair.create(privateKey.decodeHex().toByteArray())
             val authService = SampleApp.getSDNClient(requireContext()).authenticationService()
+            val sp = requireContext().getSharedPreferences("device_data", MODE_PRIVATE)
+            val deviceIdKey = "device_id_$address"
+            val deviceId = sp.getString(deviceIdKey, "") ?: ""
             try {
-                val loginDidMsg = authService.didPreLogin(edgeNodeConnectionConfig, address)
+                val loginDidMsg = authService.didPreLogin(edgeNodeConnectionConfig, address, deviceId)
                 if (loginDidMsg.message is String) {
                     Log.d("loginLoginDidMsg", loginDidMsg.message)
                 }
@@ -127,6 +131,11 @@ class SimpleLoginFragment : Fragment() {
                 Toast.makeText(requireContext(), "Failure: $failure", Toast.LENGTH_SHORT).show()
                 null
             }?.let {
+                val retDeviceId = it.sessionParams.deviceId
+                if (retDeviceId != deviceId) {
+                    Timber.tag("login").i("get new device id: $retDeviceId")
+                    sp.edit().putString(deviceIdKey, retDeviceId).apply()
+                }
                 SessionHolder.currentSession = it
                 it.open()
                 it.syncService().startSync(true)

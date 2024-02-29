@@ -17,6 +17,7 @@
 package org.sdn.android.sdk.internal.session.room.create
 
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
+import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_RATCHET
 import org.sdn.android.sdk.api.extensions.tryOrNull
 import org.sdn.android.sdk.api.session.events.model.Event
 import org.sdn.android.sdk.api.session.events.model.EventType
@@ -176,7 +177,7 @@ internal class CreateRoomBodyBuilder @Inject constructor(
         }
         return params.algorithm
                 ?.let {
-                    if (it != MXCRYPTO_ALGORITHM_MEGOLM) {
+                    if (!arrayOf(MXCRYPTO_ALGORITHM_MEGOLM, MXCRYPTO_ALGORITHM_RATCHET).contains(it)) {
                         throw InvalidParameterException("Unsupported algorithm: $it")
                     }
                     Event(

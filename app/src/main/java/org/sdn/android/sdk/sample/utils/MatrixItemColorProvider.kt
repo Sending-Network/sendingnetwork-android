@@ -41,6 +41,15 @@ class SDNItemColorProvider(private val context: Context) {
         }
     }
 
+    fun getColorForRoom(id: String): Int {
+        return cache.getOrPut(id) {
+            ContextCompat.getColor(
+                context,
+                getColorFromRoomId(id)
+            )
+        }
+    }
+
     companion object {
         @ColorRes
         @VisibleForTesting
@@ -63,10 +72,13 @@ class SDNItemColorProvider(private val context: Context) {
 
         @ColorRes
         private fun getColorFromRoomId(roomId: String?): Int {
-            return when ((roomId?.toList()?.sumOf { it.code } ?: 0) % 3) {
-                1 -> R.color.avatar_fill_2
-                2 -> R.color.avatar_fill_3
-                else -> R.color.avatar_fill_1
+            return when ((roomId?.toList()?.sumOf { it.code } ?: 0) % 6) {
+                1 -> R.color.avatar_fill_1
+                2 -> R.color.avatar_fill_2
+                3 -> R.color.avatar_fill_3
+                4 -> R.color.avatar_fill_4
+                5 -> R.color.avatar_fill_5
+                else -> R.color.avatar_fill_6
             }
         }
     }

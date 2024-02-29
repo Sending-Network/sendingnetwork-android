@@ -21,6 +21,7 @@ import io.realm.Realm
 import io.realm.kotlin.createObject
 import kotlinx.coroutines.runBlocking
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
+import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_RATCHET
 import org.sdn.android.sdk.api.session.crypto.MXCryptoError
 import org.sdn.android.sdk.api.session.crypto.model.OlmDecryptionResult
 import org.sdn.android.sdk.api.session.events.model.Event
@@ -494,7 +495,7 @@ internal class RoomSyncHandler @Inject constructor(
                 if (sendingEventEntity != null) {
                     Timber.v("Remove local echo for tx:$txId")
                     roomEntity.sendingTimelineEvents.remove(sendingEventEntity)
-                    if (event.isEncrypted() && event.content?.get("algorithm") as? String == MXCRYPTO_ALGORITHM_MEGOLM) {
+                    if (event.isEncrypted() && arrayOf(MXCRYPTO_ALGORITHM_MEGOLM, MXCRYPTO_ALGORITHM_RATCHET).contains(event.content?.get("algorithm") as? String)) {
                         // updated with echo decryption, to avoid seeing txId decrypt again
                         val adapter = MoshiProvider.providesMoshi().adapter<OlmDecryptionResult>(OlmDecryptionResult::class.java)
                         sendingEventEntity.root?.decryptionResultJson?.let { json ->

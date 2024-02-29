@@ -24,6 +24,7 @@ import timber.log.Timber
 internal class MXOutboundSessionInfo(
         // The id of the session
         val sessionId: String,
+        val senderKey: String?,
         val sharedWithHelper: SharedWithHelper,
         private val clock: Clock,
         // When the session was created

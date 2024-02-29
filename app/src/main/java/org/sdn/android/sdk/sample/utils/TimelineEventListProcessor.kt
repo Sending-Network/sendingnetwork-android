@@ -48,6 +48,7 @@ class TimelineEventListProcessor(private val adapter: MessagesListAdapter<IMessa
             // This is where formatting of event happens, so you should look
             TimelineEventMessageWrapper(it)
         }
+        currentSnapshot = emptyList()
         val diffCallback = TimelineEventMessagesDiffUtilCallback(currentSnapshot, mappedNewSnapshot)
         previousSnapshot = currentSnapshot.toList()
         currentSnapshot = mappedNewSnapshot

@@ -89,6 +89,7 @@ internal class DefaultDidLoginTask @Inject constructor(
             }
         }
 
+        credentials.loginTime = System.currentTimeMillis()
         return sessionCreator.createSession(credentials, params.edgeNodeConnectionConfig, LoginType.DIRECT)
     }
 

@@ -17,12 +17,14 @@
 package org.sdn.android.sdk.api.session.room.model
 
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
+import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_RATCHET
 
 sealed class RoomEncryptionAlgorithm {
 
     abstract class SupportedAlgorithm(val alg: String) : RoomEncryptionAlgorithm()
 
     object Megolm : SupportedAlgorithm(MXCRYPTO_ALGORITHM_MEGOLM)
+    object Ratchet : SupportedAlgorithm(MXCRYPTO_ALGORITHM_RATCHET)
 
     data class UnsupportedAlgorithm(val name: String?) : RoomEncryptionAlgorithm()
 }

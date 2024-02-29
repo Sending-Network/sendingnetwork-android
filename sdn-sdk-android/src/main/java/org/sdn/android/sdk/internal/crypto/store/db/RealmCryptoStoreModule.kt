@@ -21,6 +21,7 @@ import org.sdn.android.sdk.internal.crypto.store.db.model.AuditTrailEntity
 import org.sdn.android.sdk.internal.crypto.store.db.model.CrossSigningInfoEntity
 import org.sdn.android.sdk.internal.crypto.store.db.model.CryptoMetadataEntity
 import org.sdn.android.sdk.internal.crypto.store.db.model.CryptoRoomEntity
+import org.sdn.android.sdk.internal.crypto.store.db.model.CurrentGroupSessionEntity
 import org.sdn.android.sdk.internal.crypto.store.db.model.DeviceInfoEntity
 import org.sdn.android.sdk.internal.crypto.store.db.model.KeyInfoEntity
 import org.sdn.android.sdk.internal.crypto.store.db.model.KeyRequestReplyEntity
@@ -46,6 +47,7 @@ import org.sdn.android.sdk.internal.crypto.store.db.model.WithHeldSessionEntity
             DeviceInfoEntity::class,
             KeysBackupDataEntity::class,
             OlmInboundGroupSessionEntity::class,
+            CurrentGroupSessionEntity::class,
             OlmSessionEntity::class,
             UserEntity::class,
             KeyInfoEntity::class,

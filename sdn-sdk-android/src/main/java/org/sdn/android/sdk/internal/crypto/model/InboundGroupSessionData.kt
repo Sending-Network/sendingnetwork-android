@@ -26,6 +26,10 @@ data class InboundGroupSessionData(
         @Json(name = "room_id")
         var roomId: String? = null,
 
+        /** The algorithm in which this session is used. */
+        @Json(name = "algorithm")
+        var algorithm: String? = null,
+
         /** The base64-encoded curve25519 key of the sender. */
         @Json(name = "sender_key")
         var senderKey: String? = null,

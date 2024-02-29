@@ -18,6 +18,7 @@ package org.sdn.android.sdk.internal.crypto
 
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_OLM
+import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_RATCHET
 
 // TODO Update comment
 internal object MXCryptoAlgorithms {
@@ -30,6 +31,7 @@ internal object MXCryptoAlgorithms {
      */
     fun hasEncryptorClassForAlgorithm(algorithm: String?): Boolean {
         return when (algorithm) {
+            MXCRYPTO_ALGORITHM_RATCHET,
             MXCRYPTO_ALGORITHM_MEGOLM,
             MXCRYPTO_ALGORITHM_OLM -> true
             else -> false
@@ -45,6 +47,7 @@ internal object MXCryptoAlgorithms {
 
     fun hasDecryptorClassForAlgorithm(algorithm: String?): Boolean {
         return when (algorithm) {
+            MXCRYPTO_ALGORITHM_RATCHET,
             MXCRYPTO_ALGORITHM_MEGOLM,
             MXCRYPTO_ALGORITHM_OLM -> true
             else -> false
@@ -55,6 +58,6 @@ internal object MXCryptoAlgorithms {
      * @return The list of registered algorithms.
      */
     fun supportedAlgorithms(): List<String> {
-        return listOf(MXCRYPTO_ALGORITHM_MEGOLM, MXCRYPTO_ALGORITHM_OLM)
+        return listOf(MXCRYPTO_ALGORITHM_RATCHET, MXCRYPTO_ALGORITHM_MEGOLM, MXCRYPTO_ALGORITHM_OLM)
     }
 }

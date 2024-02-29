@@ -18,19 +18,9 @@ package org.sdn.android.sdk.internal.crypto.model.rest
 
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
-import org.sdn.android.sdk.api.session.crypto.model.SendToDeviceObject
 
 @JsonClass(generateAdapter = true)
-internal data class EncryptedMessage(
-        @Json(name = "algorithm")
-        val algorithm: String? = null,
-
-        @Json(name = "sender_key")
-        val senderKey: String? = null,
-
+internal data class PullKeysBody (
         @Json(name = "trace_id")
-        var traceId: String? = null,
-
-        @Json(name = "ciphertext")
-        val cipherText: Map<String, Any>? = null
-) : SendToDeviceObject
+        val traceId: String,
+)

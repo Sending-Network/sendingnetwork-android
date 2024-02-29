@@ -17,17 +17,22 @@
 package org.sdn.android.sdk.api.crypto
 
 /**
- * Matrix algorithm value for olm.
+ * Algorithm value for olm.
  */
 const val MXCRYPTO_ALGORITHM_OLM = "m.olm.v1.curve25519-aes-sha2"
 
 /**
- * Matrix algorithm value for megolm.
+ * Algorithm value for megolm.
  */
 const val MXCRYPTO_ALGORITHM_MEGOLM = "m.megolm.v1.aes-sha2"
 
 /**
- * Matrix algorithm value for megolm keys backup.
+ * Algorithm value for ratchet.
+ */
+const val MXCRYPTO_ALGORITHM_RATCHET = "m.megolm.v1.aes-ratchet"
+
+/**
+ * Algorithm value for megolm keys backup.
  */
 const val MXCRYPTO_ALGORITHM_MEGOLM_BACKUP = "m.megolm_backup.v1.curve25519-aes-sha2"
 

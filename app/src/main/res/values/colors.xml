@@ -10,6 +10,9 @@
     <color name="avatar_fill_1">#FF03B381</color>
     <color name="avatar_fill_2">#FF368bd6</color>
     <color name="avatar_fill_3">#FFac3ba8</color>
+    <color name="avatar_fill_4">#FF03B381</color>
+    <color name="avatar_fill_5">#FF2dc2c5</color>
+    <color name="avatar_fill_6">#FF74d12c</color>
 
     <color name="username_1">#368bd6</color>
     <color name="username_2">#ac3ba8</color>

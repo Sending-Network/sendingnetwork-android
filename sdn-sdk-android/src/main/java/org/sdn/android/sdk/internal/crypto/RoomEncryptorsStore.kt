@@ -18,8 +18,10 @@ package org.sdn.android.sdk.internal.crypto
 
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_OLM
+import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_RATCHET
 import org.sdn.android.sdk.internal.crypto.algorithms.IMXEncrypting
 import org.sdn.android.sdk.internal.crypto.algorithms.megolm.MXMegolmEncryptionFactory
+import org.sdn.android.sdk.internal.crypto.algorithms.megolm.MXRatchetEncryptionFactory
 import org.sdn.android.sdk.internal.crypto.algorithms.olm.MXOlmEncryptionFactory
 import org.sdn.android.sdk.internal.crypto.store.IMXCryptoStore
 import org.sdn.android.sdk.internal.session.SessionScope
@@ -28,31 +30,33 @@ import javax.inject.Inject
 @SessionScope
 internal class RoomEncryptorsStore @Inject constructor(
         private val cryptoStore: IMXCryptoStore,
+        private val ratchetEncryptionFactory: MXRatchetEncryptionFactory,
         private val megolmEncryptionFactory: MXMegolmEncryptionFactory,
         private val olmEncryptionFactory: MXOlmEncryptionFactory,
 ) {
 
     // MXEncrypting instance for each room.
-    private val roomEncryptors = mutableMapOf<String, IMXEncrypting>()
+    private val roomEncryptors: MutableMap<String /* room id */, MutableMap<String /* algorithm */, IMXEncrypting>> = HashMap()
 
-    fun put(roomId: String, alg: IMXEncrypting) {
+    fun put(roomId: String, algId: String, alg: IMXEncrypting) {
         synchronized(roomEncryptors) {
-            roomEncryptors.put(roomId, alg)
+            roomEncryptors.getOrPut(roomId) { mutableMapOf() }.put(algId, alg)
         }
     }
 
-    fun get(roomId: String): IMXEncrypting? {
+    fun get(roomId: String, algId: String = MXCRYPTO_ALGORITHM_MEGOLM): IMXEncrypting? {
         return synchronized(roomEncryptors) {
             val cache = roomEncryptors[roomId]
-            if (cache != null) {
-                return@synchronized cache
+            if (cache != null && cache.containsKey(algId)) {
+                return@synchronized cache[algId]
             } else {
-                val alg: IMXEncrypting? = when (cryptoStore.getRoomAlgorithm(roomId)) {
+                val alg: IMXEncrypting? = when (algId) {
+                    MXCRYPTO_ALGORITHM_RATCHET -> ratchetEncryptionFactory.create(roomId)
                     MXCRYPTO_ALGORITHM_MEGOLM -> megolmEncryptionFactory.create(roomId)
                     MXCRYPTO_ALGORITHM_OLM -> olmEncryptionFactory.create(roomId)
                     else -> null
                 }
-                alg?.let { roomEncryptors.put(roomId, it) }
+                alg?.let { roomEncryptors.getOrPut(roomId) { mutableMapOf() }.put(algId, it) }
                 return@synchronized alg
             }
         }

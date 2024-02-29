@@ -26,6 +26,7 @@ import org.sdn.android.sdk.internal.crypto.MegolmSessionData
 import org.sdn.android.sdk.internal.crypto.OutgoingKeyRequestManager
 import org.sdn.android.sdk.internal.crypto.RoomDecryptorProvider
 import org.sdn.android.sdk.internal.crypto.algorithms.megolm.MXMegolmDecryption
+import org.sdn.android.sdk.internal.crypto.algorithms.megolm.MXRatchetDecryption
 import org.sdn.android.sdk.internal.crypto.store.IMXCryptoStore
 import org.sdn.android.sdk.internal.util.time.Clock
 import timber.log.Timber
@@ -93,6 +94,9 @@ internal class MegolmSessionDataImporter @Inject constructor(
                     // Have another go at decrypting events sent with this session
                     when (decrypting) {
                         is MXMegolmDecryption -> {
+                            decrypting.onNewSession(megolmSessionData.roomId, megolmSessionData.senderKey!!, sessionId!!)
+                        }
+                        is MXRatchetDecryption -> {
                             decrypting.onNewSession(megolmSessionData.roomId, megolmSessionData.senderKey!!, sessionId!!)
                         }
                     }

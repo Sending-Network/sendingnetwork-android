@@ -1,4 +1,14 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="MissingTranslation">
     <string name="app_name">sdn-sdk-android-sample</string>
     <string name="conference">Conference</string>
+    <string name="import_key">Import Key</string>
+    <string name="export_key">Export Key</string>
+    <string name="logout">Logout</string>
+    <string name="password">Password</string>
+    <string name="cancel">Cancel</string>
+    <string name="ok">OK</string>
+    <string name="leave">Leave</string>
+    <string name="invite">Invite</string>
+    <string name="meeting">Meeting</string>
 </resources>
