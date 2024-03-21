@@ -25,6 +25,8 @@ import org.sdn.android.sdk.internal.crypto.actions.MessageEncrypter
 import org.sdn.android.sdk.internal.crypto.keysbackup.DefaultKeysBackupService
 import org.sdn.android.sdk.internal.crypto.repository.WarnOnUnknownDeviceRepository
 import org.sdn.android.sdk.internal.crypto.store.IMXCryptoStore
+import org.sdn.android.sdk.internal.crypto.tasks.GetSessionMapTask
+import org.sdn.android.sdk.internal.crypto.tasks.PutSessionMapTask
 import org.sdn.android.sdk.internal.crypto.tasks.SendToDeviceTask
 import org.sdn.android.sdk.internal.di.DeviceId
 import org.sdn.android.sdk.internal.di.UserId
@@ -40,6 +42,8 @@ internal class MXRatchetEncryptionFactory @Inject constructor(
     @UserId private val userId: String,
     @DeviceId private val deviceId: String?,
     private val sendToDeviceTask: SendToDeviceTask,
+    private val getSessionMapTask: GetSessionMapTask,
+    private val putSessionMapTask: PutSessionMapTask,
     private val messageEncrypter: MessageEncrypter,
     private val warnOnUnknownDevicesRepository: WarnOnUnknownDeviceRepository,
     private val coroutineDispatchers: SDNCoroutineDispatchers,
@@ -58,6 +62,8 @@ internal class MXRatchetEncryptionFactory @Inject constructor(
             myUserId = userId,
             myDeviceId = deviceId!!,
             sendToDeviceTask = sendToDeviceTask,
+            getSessionMapTask = getSessionMapTask,
+            putSessionMapTask = putSessionMapTask,
             messageEncrypter = messageEncrypter,
             warnOnUnknownDevicesRepository = warnOnUnknownDevicesRepository,
             coroutineDispatchers = coroutineDispatchers,

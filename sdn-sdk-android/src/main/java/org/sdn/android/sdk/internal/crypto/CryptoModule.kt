@@ -68,8 +68,10 @@ import org.sdn.android.sdk.internal.crypto.tasks.DefaultDownloadKeysForUsers
 import org.sdn.android.sdk.internal.crypto.tasks.DefaultEncryptEventTask
 import org.sdn.android.sdk.internal.crypto.tasks.DefaultGetDeviceInfoTask
 import org.sdn.android.sdk.internal.crypto.tasks.DefaultGetDevicesTask
+import org.sdn.android.sdk.internal.crypto.tasks.DefaultGetSessionMapTask
 import org.sdn.android.sdk.internal.crypto.tasks.DefaultInitializeCrossSigningTask
 import org.sdn.android.sdk.internal.crypto.tasks.DefaultPullSessionKeysTask
+import org.sdn.android.sdk.internal.crypto.tasks.DefaultPutSessionMapTask
 import org.sdn.android.sdk.internal.crypto.tasks.DefaultSendEventTask
 import org.sdn.android.sdk.internal.crypto.tasks.DefaultSendToDeviceTask
 import org.sdn.android.sdk.internal.crypto.tasks.DefaultSendVerificationMessageTask
@@ -82,8 +84,10 @@ import org.sdn.android.sdk.internal.crypto.tasks.DownloadKeysForUsersTask
 import org.sdn.android.sdk.internal.crypto.tasks.EncryptEventTask
 import org.sdn.android.sdk.internal.crypto.tasks.GetDeviceInfoTask
 import org.sdn.android.sdk.internal.crypto.tasks.GetDevicesTask
+import org.sdn.android.sdk.internal.crypto.tasks.GetSessionMapTask
 import org.sdn.android.sdk.internal.crypto.tasks.InitializeCrossSigningTask
 import org.sdn.android.sdk.internal.crypto.tasks.PullSessionKeysTask
+import org.sdn.android.sdk.internal.crypto.tasks.PutSessionMapTask
 import org.sdn.android.sdk.internal.crypto.tasks.SendEventTask
 import org.sdn.android.sdk.internal.crypto.tasks.SendToDeviceTask
 import org.sdn.android.sdk.internal.crypto.tasks.SendVerificationMessageTask
@@ -234,6 +238,12 @@ internal abstract class CryptoModule {
 
     @Binds
     abstract fun bindPullRoomKeyTask(task: DefaultPullSessionKeysTask): PullSessionKeysTask
+
+    @Binds
+    abstract fun bindGetSessionMapTask(task: DefaultGetSessionMapTask): GetSessionMapTask
+
+    @Binds
+    abstract fun bindPutSessionMapTask(task: DefaultPutSessionMapTask): PutSessionMapTask
 
     @Binds
     abstract fun bindEncryptEventTask(task: DefaultEncryptEventTask): EncryptEventTask

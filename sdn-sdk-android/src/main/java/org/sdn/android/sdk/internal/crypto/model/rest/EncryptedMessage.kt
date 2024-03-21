@@ -31,6 +31,9 @@ internal data class EncryptedMessage(
         @Json(name = "trace_id")
         var traceId: String? = null,
 
+        @Json(name = "room_id")
+        var roomId: String? = null,
+
         @Json(name = "ciphertext")
         val cipherText: Map<String, Any>? = null
 ) : SendToDeviceObject
