@@ -580,6 +580,12 @@ internal interface IMXCryptoStore {
             chainIndex: Int
     )
 
+    fun batchMarkedSessionAsShared(
+        roomId: String?,
+        sessionId: String,
+        sessionMap: Map<String, Map<String, Any>>
+    )
+
     /**
      * Query for information on this session sharing history.
      * @return SharedSessionResult

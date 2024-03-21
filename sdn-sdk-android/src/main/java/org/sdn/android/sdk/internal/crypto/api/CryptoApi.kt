@@ -178,4 +178,19 @@ internal interface CryptoApi {
 
     @POST(NetworkConstants.URI_API_PREFIX_PATH_R0 + "get_olm_event")
     suspend fun pullRoomKeys(@Body body: PullKeysBody): ToDeviceSyncResponse
+
+    @GET(NetworkConstants.URI_API_PREFIX_PATH_R0 + "rooms/{room_id}/session/{session_id}")
+    @JvmSuppressWildcards
+    suspend fun getSessionMap(
+        @Path("room_id") roomId: String,
+        @Path("session_id") sessionId: String,
+    ): Map<String, Map<String, Any>>
+
+    @PUT(NetworkConstants.URI_API_PREFIX_PATH_R0 + "rooms/{room_id}/session/{session_id}")
+    @JvmSuppressWildcards
+    suspend fun putSessionMap(
+        @Path("room_id") roomId: String,
+        @Path("session_id") sessionId: String,
+        @Body body: Map<String, Map<String, Any>>
+    )
 }

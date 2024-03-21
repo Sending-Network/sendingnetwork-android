@@ -23,13 +23,15 @@ import timber.log.Timber
 
 internal class MXOutboundSessionInfo(
         // The id of the session
-        val sessionId: String,
-        val senderKey: String?,
-        val sharedWithHelper: SharedWithHelper,
-        private val clock: Clock,
+    val sessionId: String,
+    val senderKey: String?,
+    val sharedWithHelper: SharedWithHelper,
+    private val clock: Clock,
         // When the session was created
-        private val creationTime: Long = clock.epochMillis(),
-        val sharedHistory: Boolean = false
+    private val creationTime: Long = clock.epochMillis(),
+    val sharedHistory: Boolean = false,
+    val updatedUserDevices: HashMap<String, HashMap<String, Any>> = HashMap(),
+    var sharedSessionMap: Map<String, Map<String, Any>> = HashMap()
 ) {
 
     // Number of times this session has been used

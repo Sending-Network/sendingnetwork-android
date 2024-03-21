@@ -46,6 +46,8 @@ import org.sdn.android.sdk.internal.crypto.model.toDebugCount
 import org.sdn.android.sdk.internal.crypto.model.toDebugString
 import org.sdn.android.sdk.internal.crypto.repository.WarnOnUnknownDeviceRepository
 import org.sdn.android.sdk.internal.crypto.store.IMXCryptoStore
+import org.sdn.android.sdk.internal.crypto.tasks.GetSessionMapTask
+import org.sdn.android.sdk.internal.crypto.tasks.PutSessionMapTask
 import org.sdn.android.sdk.internal.crypto.tasks.SendToDeviceTask
 import org.sdn.android.sdk.internal.util.JsonCanonicalizer
 import org.sdn.android.sdk.internal.util.convertToUTF8
@@ -66,6 +68,8 @@ internal class MXRatchetEncryption(
     private val myUserId: String,
     private val myDeviceId: String,
     private val sendToDeviceTask: SendToDeviceTask,
+    private val getSessionMapTask: GetSessionMapTask,
+    private val putSessionMapTask: PutSessionMapTask,
     private val messageEncrypter: MessageEncrypter,
     private val warnOnUnknownDevicesRepository: WarnOnUnknownDeviceRepository,
     private val coroutineDispatchers: SDNCoroutineDispatchers,
@@ -199,78 +203,87 @@ internal class MXRatchetEncryption(
      */
     private suspend fun ensureCurrentSession(devicesInRoom: MXUsersDevicesMap<CryptoDeviceInfo>): MXOutboundSessionInfo {
         Timber.tag(loggerTag.value).v("ensureCurrentSession roomId:$roomId")
-        val safeSession: MXOutboundSessionInfo
         val sharedHistory = cryptoStore.shouldShareHistory(roomId)
-        val currentGroupSession = olmDevice.getCurrentGroupSession(roomId)
-        val sessionId = currentGroupSession?.wrapper?.safeSessionId
-        val isNewSession: Boolean
+        val safeSession: MXOutboundSessionInfo
         val exportedSession: MegolmSessionData?
 
-        if (currentGroupSession != null && sessionId != null) {
-            Timber.tag(loggerTag.value).i("ensureCurrentSession() : reuse existing session $sessionId in $roomId")
-            safeSession = MXOutboundSessionInfo(
-                sessionId = sessionId,
-                senderKey = currentGroupSession.wrapper.senderKey,
-                sharedWithHelper = SharedWithHelper(roomId, sessionId, cryptoStore),
-                clock = clock,
-                sharedHistory = sharedHistory
-            )
-            isNewSession = false
-            exportedSession = currentGroupSession.mutex.withLock {
-                currentGroupSession.wrapper.exportKeys()
+        val outboundSession = this.outboundSession
+        if (outboundSession != null) {
+            Timber.tag(loggerTag.value).i("ensureCurrentSession() : reuse outbound session ${outboundSession.sessionId} in $roomId")
+            safeSession = outboundSession
+            val inboundGroupSessionHolder = olmDevice.getInboundGroupSession(outboundSession.sessionId, outboundSession.senderKey, roomId)
+            exportedSession = inboundGroupSessionHolder.mutex.withLock {
+                inboundGroupSessionHolder.wrapper.exportKeys()
             }
-
         } else {
-            var session = outboundSession
-            if (session == null) {
-                session = prepareNewSessionInRoom()
-                outboundSession = session
-            } else {
-                olmDevice.addInboundGroupSession(
-                    sessionId = session.sessionId,
-                    sessionKey = olmDevice.getSessionKey(session.sessionId)!!,
-                    roomId = roomId,
-                    algorithm = MXCRYPTO_ALGORITHM_RATCHET,
-                    senderKey = olmDevice.deviceCurve25519Key!!,
-                    forwardingCurve25519KeyChain = emptyList(),
-                    keysClaimed = mapOf("ed25519" to olmDevice.deviceEd25519Key!!),
-                    exportFormat = false,
-                    sharedHistory = sharedHistory,
-                    trusted = true
+            val currentGroupSession = olmDevice.getCurrentGroupSession(roomId)
+            val sessionId = currentGroupSession?.wrapper?.safeSessionId
+            if (currentGroupSession != null && sessionId != null) {
+                Timber.tag(loggerTag.value).i("ensureCurrentSession() : reuse existing session $sessionId in $roomId")
+                safeSession = MXOutboundSessionInfo(
+                    sessionId = sessionId,
+                    senderKey = currentGroupSession.wrapper.senderKey,
+                    sharedWithHelper = SharedWithHelper(roomId, sessionId, cryptoStore),
+                    clock = clock,
+                    sharedHistory = sharedHistory
                 )
+                exportedSession = currentGroupSession.mutex.withLock {
+                    currentGroupSession.wrapper.exportKeys()
+                }
+            } else {
+                safeSession = prepareNewSessionInRoom()
+                exportedSession = null
+                Timber.tag(loggerTag.value).i("ensureCurrentSession() : use new session ${safeSession.sessionId} in $roomId")
             }
-            safeSession = session
-            isNewSession = true
-            exportedSession = null
-            Timber.tag(loggerTag.value).i("ensureCurrentSession() : use new session ${session.sessionId} in $roomId")
+            this.outboundSession = safeSession
+        }
+
+        var remoteSessionMap: Map<String, Map<String, Any>>? = null
+        if (safeSession.sharedSessionMap.isEmpty()) {
+            val sharedWithDevices = safeSession.sharedWithHelper.sharedWithDevices()
+            if (!sharedWithDevices.isEmpty) {
+                safeSession.sharedSessionMap = sharedWithDevices.map
+            } else {
+                remoteSessionMap = getSessionMapTask.execute(GetSessionMapTask.Params(roomId, safeSession.sessionId))
+                safeSession.sharedSessionMap = remoteSessionMap
+            }
         }
 
         val shareMap = HashMap<String, MutableList<CryptoDeviceInfo>>()/* userId */
         val userIds = devicesInRoom.userIds
+        var skipCount = 0
         for (userId in userIds) {
             val deviceIds = devicesInRoom.getUserDeviceIds(userId)
             for (deviceId in deviceIds!!) {
                 val deviceInfo = devicesInRoom.getObject(userId, deviceId)
-                if (deviceInfo != null && !cryptoStore.getSharedSessionInfo(roomId, safeSession.sessionId, deviceInfo).found) {
+                if (deviceInfo != null && safeSession.sharedSessionMap[userId]?.get(deviceId) == null) {
                     val devices = shareMap.getOrPut(userId) { ArrayList() }
                     devices.add(deviceInfo)
+                } else {
+                    skipCount++
                 }
             }
         }
         val devicesCount = shareMap.entries.fold(0) { acc, new -> acc + new.value.size }
-        Timber.tag(loggerTag.value).d("roomId:$roomId found $devicesCount devices without megolm session(${safeSession.sessionId})")
+        Timber.tag(loggerTag.value).d("roomId:$roomId found $devicesCount devices without megolm session(${safeSession.sessionId}), skip count: $skipCount")
 
+        safeSession.updatedUserDevices.clear()
         // measure time consumed
         val ts = clock.epochMillis()
-        if (isNewSession) {
-            shareKey(safeSession, null, shareMap)
-        } else {
-            // offload to io thread
-            cryptoCoroutineScope.launch(coroutineDispatchers.io) {
-                shareKey(safeSession, exportedSession, shareMap)
-            }
-        }
+        shareKey(safeSession, exportedSession, shareMap)
         Timber.tag(loggerTag.value).d("shareKey in $roomId done in ${clock.epochMillis() - ts} millis")
+
+        if (!remoteSessionMap.isNullOrEmpty()) {
+            cryptoStore.batchMarkedSessionAsShared(roomId, safeSession.sessionId, remoteSessionMap)
+            Timber.tag(loggerTag.value).d("batchMarkedSessionAsShared in $roomId for ${safeSession.sessionId} done in ${clock.epochMillis() - ts} millis")
+        }
+
+        if (safeSession.updatedUserDevices.isNotEmpty()) {
+            Timber.tag(loggerTag.value).d("update ${safeSession.updatedUserDevices.size} users for megolm session(${safeSession.sessionId})")
+            putSessionMapTask.execute(PutSessionMapTask.Params(roomId, safeSession.sessionId, safeSession.updatedUserDevices))
+            Timber.tag(loggerTag.value).d("PutSessionMapTask in $roomId for ${safeSession.sessionId} done in ${clock.epochMillis() - ts} millis")
+        }
+
         return safeSession
     }
 
@@ -374,6 +387,7 @@ internal class MXRatchetEncryption(
                 Timber.tag(loggerTag.value).v("shareUserDevicesKey() : Add to share keys contentMap for $userId:$deviceID")
                 val encryptedMessage = messageEncrypter.encryptMessage(payload, listOf(sessionResult.deviceInfo))
                 encryptedMessage.traceId = sessionInfo.sessionId
+                encryptedMessage.roomId = roomId
                 contentMap.setObject(userId, deviceID, encryptedMessage)
                 haveTargets = true
             }
@@ -387,6 +401,8 @@ internal class MXRatchetEncryption(
         for ((_, devicesToShareWith) in devicesByUser) {
             for (deviceInfo in devicesToShareWith) {
                 sessionInfo.sharedWithHelper.markedSessionAsShared(deviceInfo, chainIndex)
+                val devices = sessionInfo.updatedUserDevices.getOrPut(deviceInfo.userId) { HashMap() }
+                devices[deviceInfo.deviceId] = 1
                 // XXX is it needed to add it to the audit trail?
                 // For now decided that no, we are more interested by forward trail
             }

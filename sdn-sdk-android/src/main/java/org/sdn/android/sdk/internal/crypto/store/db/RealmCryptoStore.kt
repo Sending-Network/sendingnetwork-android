@@ -1798,6 +1798,29 @@ internal class RealmCryptoStore @Inject constructor(
         }
     }
 
+    override fun batchMarkedSessionAsShared(
+        roomId: String?,
+        sessionId: String,
+        sessionMap: Map<String, Map<String, Any>>
+    ) {
+        val entityList = ArrayList<SharedSessionEntity>()
+        for ((userId, deviceMap) in sessionMap) {
+            for (deviceId in deviceMap.keys) {
+                entityList.add(SharedSessionEntity(
+                    roomId = roomId,
+                    sessionId = sessionId,
+                    userId = userId,
+                    deviceId = deviceId,
+                    deviceIdentityKey = "",
+                    chainIndex = 0
+                ))
+            }
+        }
+        doRealmTransaction(realmConfiguration) { realm ->
+            realm.insert(entityList)
+        }
+    }
+
     override fun getSharedSessionInfo(roomId: String?, sessionId: String, deviceInfo: CryptoDeviceInfo): IMXCryptoStore.SharedSessionResult {
         return doWithRealm(realmConfiguration) { realm ->
             SharedSessionEntity.get(
