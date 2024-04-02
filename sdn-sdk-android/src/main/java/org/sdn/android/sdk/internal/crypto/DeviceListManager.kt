@@ -74,6 +74,10 @@ internal class DeviceListManager @Inject constructor(
         }
     }
 
+    fun getSessionLoginTime() : Long {
+        return credentials.loginTime
+    }
+
     private fun dispatchDeviceChange(users: List<String>) {
         synchronized(deviceChangeListeners) {
             deviceChangeListeners.forEach {
@@ -522,7 +526,8 @@ internal class DeviceListManager @Inject constructor(
                 Timber.e("## CRYPTO | validateDeviceKeys() : $previouslyStoredDeviceKeys -> $deviceKeys")
                 Timber.e("## CRYPTO | validateDeviceKeys() : ${previouslyStoredDeviceKeys.keys} -> ${deviceKeys.keys}")
 
-                return false
+                // log a warning and update the keys
+                return true
             }
         }
 

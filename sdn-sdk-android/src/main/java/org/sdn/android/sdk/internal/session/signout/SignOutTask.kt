@@ -30,7 +30,8 @@ import javax.inject.Inject
 
 internal interface SignOutTask : Task<SignOutTask.Params, Unit> {
     data class Params(
-            val signOutFromHomeserver: Boolean
+            val signOutFromHomeserver: Boolean,
+            val deleteCrypto: Boolean
     )
 }
 
@@ -75,6 +76,6 @@ internal class DefaultSignOutTask @Inject constructor(
                 }
 
         Timber.d("SignOut: cleanup session...")
-        cleanupSession.cleanup()
+        cleanupSession.cleanup(params.deleteCrypto)
     }
 }

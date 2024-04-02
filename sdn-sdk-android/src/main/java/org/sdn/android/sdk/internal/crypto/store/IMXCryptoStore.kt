@@ -264,6 +264,8 @@ internal interface IMXCryptoStore {
 
     fun saveMyDevicesInfo(info: List<DeviceInfo>)
 
+    fun getAllCryptoRooms(): List<String>
+
     /**
      * Store the crypto algorithm for a room.
      *
@@ -382,6 +384,27 @@ internal interface IMXCryptoStore {
      */
     fun removeInboundGroupSession(sessionId: String, senderKey: String)
 
+    /**
+     * Retrieve the current group session.
+     *
+     * @param roomId the room ID.
+     * @return the current group session.
+     */
+    fun getCurrentGroupSession(roomId: String): MXInboundMegolmSessionWrapper?
+
+    /**
+     * Remove current group session.
+     *
+     * @param roomId the room ID.
+     */
+    fun removeCurrentGroupSession(roomId: String)
+
+    /**
+     * Remove all current group session.
+     *
+     */
+    fun removeAllCurrentGroupSession(roomIds: Array<String>)
+
     /* ==========================================================================================
      * Keys backup
      * ========================================================================================== */
@@ -438,7 +461,7 @@ internal interface IMXCryptoStore {
      */
     fun getOutgoingRoomKeyRequest(requestBody: RoomKeyRequestBody): OutgoingKeyRequest?
     fun getOutgoingRoomKeyRequest(requestId: String): OutgoingKeyRequest?
-    fun getOutgoingRoomKeyRequest(roomId: String, sessionId: String, algorithm: String, senderKey: String): List<OutgoingKeyRequest>
+    fun getOutgoingRoomKeyRequest(roomId: String, sessionId: String, senderKey: String): List<OutgoingKeyRequest>
 
     /**
      * Look for an existing outgoing room key request, and if none is found, add a new one.
@@ -555,6 +578,12 @@ internal interface IMXCryptoStore {
             deviceId: String,
             deviceIdentityKey: String,
             chainIndex: Int
+    )
+
+    fun batchMarkedSessionAsShared(
+        roomId: String?,
+        sessionId: String,
+        sessionMap: Map<String, Map<String, Any>>
     )
 
     /**

@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package org.sdn.android.sdk.internal.auth.data
+package org.sdn.android.sdk.internal.crypto.model.rest
 
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
-internal data class PreLoginParams(
-        @Json(name = "address") val address: String,
-        @Json(name = "did") val did: String,
-        @Json(name = "device_id") val deviceId: String,
+internal data class PullKeysBody (
+        @Json(name = "trace_id")
+        val traceId: String,
 )

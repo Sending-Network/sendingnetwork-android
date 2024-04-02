@@ -19,12 +19,13 @@ package org.sdn.android.sdk.sample.data
 import com.stfalcon.chatkit.commons.models.IDialog
 import com.stfalcon.chatkit.commons.models.IUser
 import org.sdn.android.sdk.api.session.room.model.RoomSummary
+import org.sdn.android.sdk.api.util.toSDNItem
 
 class RoomSummaryDialogWrapper(val roomSummary: RoomSummary) : IDialog<TimelineEventMessageWrapper> {
 
     override fun getId() = roomSummary.roomId
 
-    override fun getDialogPhoto() = roomSummary.avatarUrl
+    override fun getDialogPhoto() = roomSummary.avatarUrl.ifEmpty { roomSummary.toSDNItem().firstLetterOfDisplayName() }
 
     override fun getDialogName() = roomSummary.displayName
 

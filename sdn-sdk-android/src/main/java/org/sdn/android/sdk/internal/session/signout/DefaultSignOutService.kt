@@ -35,7 +35,7 @@ internal class DefaultSignOutService @Inject constructor(
         sessionParamsStore.updateCredentials(credentials)
     }
 
-    override suspend fun signOut(signOutFromHomeserver: Boolean) {
-        return signOutTask.execute(SignOutTask.Params(signOutFromHomeserver))
+    override suspend fun signOut(signOutFromHomeserver: Boolean, deleteCrypto: Boolean) {
+        return signOutTask.execute(SignOutTask.Params(signOutFromHomeserver, deleteCrypto))
     }
 }

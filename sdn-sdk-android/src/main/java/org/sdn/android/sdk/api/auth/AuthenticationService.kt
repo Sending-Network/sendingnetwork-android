@@ -146,6 +146,7 @@ interface AuthenticationService {
     suspend fun didPreLogin(
         edgeNodeConnectionConfig: EdgeNodeConnectionConfig,
         address: String,
+        deviceId: String = ""
     ): LoginDidMsg
 
     suspend fun didLogin(

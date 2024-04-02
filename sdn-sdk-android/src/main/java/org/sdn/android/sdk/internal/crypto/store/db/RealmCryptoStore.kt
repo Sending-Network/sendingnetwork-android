@@ -27,6 +27,7 @@ import io.realm.Sort
 import io.realm.kotlin.createObject
 import io.realm.kotlin.where
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
+import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_RATCHET
 import org.sdn.android.sdk.api.extensions.tryOrNull
 import org.sdn.android.sdk.api.logger.LoggerTag
 import org.sdn.android.sdk.api.session.crypto.GlobalCryptoConfig
@@ -101,6 +102,8 @@ import org.sdn.android.sdk.internal.util.time.Clock
 import org.matrix.olm.OlmAccount
 import org.matrix.olm.OlmException
 import org.matrix.olm.OlmOutboundGroupSession
+import org.sdn.android.sdk.internal.crypto.store.db.model.CurrentGroupSessionEntity
+import org.sdn.android.sdk.internal.crypto.store.db.model.CurrentGroupSessionEntityFields
 import timber.log.Timber
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -666,6 +669,16 @@ internal class RealmCryptoStore @Inject constructor(
         }
     }
 
+    override fun getAllCryptoRooms(): List<String> {
+        return doWithRealm(realmConfiguration) {
+            it.where<CryptoRoomEntity>()
+                .findAll()
+                .mapNotNull { cryptoRoom ->
+                    cryptoRoom.roomId
+                }
+        }
+    }
+
     override fun storeRoomAlgorithm(roomId: String, algorithm: String?) {
         doRealmTransaction(realmConfiguration) {
             CryptoRoomEntity.getOrCreate(it, roomId).let { entity ->
@@ -673,7 +686,7 @@ internal class RealmCryptoStore @Inject constructor(
                 // store anyway the new algorithm, but mark the room
                 // as having been encrypted once whatever, this can never
                 // go back to false
-                if (algorithm == MXCRYPTO_ALGORITHM_MEGOLM) {
+                if (algorithm == MXCRYPTO_ALGORITHM_MEGOLM || algorithm == MXCRYPTO_ALGORITHM_RATCHET) {
                     entity.wasEncryptedOnce = true
                 }
             }
@@ -817,6 +830,10 @@ internal class RealmCryptoStore @Inject constructor(
 
                 Timber.v("## CRYPTO | shouldShareHistory: ${wrapper.sessionData.sharedHistory} for $key")
                 realm.insertOrUpdate(realmOlmInboundGroupSession)
+                realm.insertOrUpdate(CurrentGroupSessionEntity().apply {
+                    store(wrapper)
+                    backedUp = existing?.backedUp ?: false
+                })
             }
         }
     }
@@ -919,6 +936,33 @@ internal class RealmCryptoStore @Inject constructor(
                     .equalTo(OlmInboundGroupSessionEntityFields.PRIMARY_KEY, key)
                     .findAll()
                     .deleteAllFromRealm()
+        }
+    }
+
+    override fun getCurrentGroupSession(roomId: String): MXInboundMegolmSessionWrapper? {
+        return doWithRealm(realmConfiguration) { realm ->
+            realm.where<CurrentGroupSessionEntity>()
+                .equalTo(OlmInboundGroupSessionEntityFields.ROOM_ID, roomId)
+                .findFirst()
+                ?.toModel()
+        }
+    }
+
+    override fun removeCurrentGroupSession(roomId: String) {
+        doRealmTransaction(realmConfiguration) {
+            it.where<CurrentGroupSessionEntity>()
+                .equalTo(OlmInboundGroupSessionEntityFields.ROOM_ID, roomId)
+                .findAll()
+                .deleteAllFromRealm()
+        }
+    }
+
+    override fun removeAllCurrentGroupSession(roomIds: Array<String>) {
+        doRealmTransaction(realmConfiguration) {
+            it.where<CurrentGroupSessionEntity>()
+                .`in`(CurrentGroupSessionEntityFields.ROOM_ID, roomIds)
+                .findAll()
+                .deleteAllFromRealm()
         }
     }
 
@@ -1162,8 +1206,7 @@ internal class RealmCryptoStore @Inject constructor(
         }.map {
             it.toOutgoingKeyRequest()
         }.firstOrNull {
-            it.requestBody?.algorithm == requestBody.algorithm &&
-                    it.requestBody?.roomId == requestBody.roomId &&
+            it.requestBody?.roomId == requestBody.roomId &&
                     it.requestBody?.senderKey == requestBody.senderKey &&
                     it.requestBody?.sessionId == requestBody.sessionId
         }
@@ -1178,7 +1221,7 @@ internal class RealmCryptoStore @Inject constructor(
         }.firstOrNull()
     }
 
-    override fun getOutgoingRoomKeyRequest(roomId: String, sessionId: String, algorithm: String, senderKey: String): List<OutgoingKeyRequest> {
+    override fun getOutgoingRoomKeyRequest(roomId: String, sessionId: String, senderKey: String): List<OutgoingKeyRequest> {
         // TODO this annoying we have to load all
         return monarchy.fetchAllCopiedSync { realm ->
             realm.where<OutgoingKeyRequestEntity>()
@@ -1187,8 +1230,7 @@ internal class RealmCryptoStore @Inject constructor(
         }.map {
             it.toOutgoingKeyRequest()
         }.filter {
-            it.requestBody?.algorithm == algorithm &&
-                    it.requestBody?.senderKey == senderKey
+            it.requestBody?.senderKey == senderKey
         }
     }
 
@@ -1283,8 +1325,7 @@ internal class RealmCryptoStore @Inject constructor(
                         }
                     }
                     .firstOrNull {
-                        it.requestBody?.algorithm == requestBody.algorithm &&
-                                it.requestBody?.sessionId == requestBody.sessionId &&
+                        it.requestBody?.sessionId == requestBody.sessionId &&
                                 it.requestBody?.senderKey == requestBody.senderKey &&
                                 it.requestBody?.roomId == requestBody.roomId
                     }
@@ -1343,8 +1384,7 @@ internal class RealmCryptoStore @Inject constructor(
                     .equalTo(OutgoingKeyRequestEntityFields.MEGOLM_SESSION_ID, sessionId)
                     .findAll().firstOrNull { entity ->
                         entity.toOutgoingKeyRequest().let {
-                            it.requestBody?.senderKey == senderKey &&
-                                    it.requestBody?.algorithm == algorithm
+                            it.requestBody?.senderKey == senderKey
                         }
                     }?.apply {
                         event.senderId?.let { addReply(it, fromDevice, event) }
@@ -1712,7 +1752,7 @@ internal class RealmCryptoStore @Inject constructor(
     override fun addWithHeldMegolmSession(withHeldContent: RoomKeyWithHeldContent) {
         val roomId = withHeldContent.roomId ?: return
         val sessionId = withHeldContent.sessionId ?: return
-        if (withHeldContent.algorithm != MXCRYPTO_ALGORITHM_MEGOLM) return
+        if (!arrayOf(MXCRYPTO_ALGORITHM_MEGOLM, MXCRYPTO_ALGORITHM_RATCHET).contains(withHeldContent.algorithm)) return
         doRealmTransaction(realmConfiguration) { realm ->
             WithHeldSessionEntity.getOrCreate(realm, roomId, sessionId)?.let {
                 it.code = withHeldContent.code
@@ -1755,6 +1795,29 @@ internal class RealmCryptoStore @Inject constructor(
                     deviceIdentityKey = deviceIdentityKey,
                     chainIndex = chainIndex
             )
+        }
+    }
+
+    override fun batchMarkedSessionAsShared(
+        roomId: String?,
+        sessionId: String,
+        sessionMap: Map<String, Map<String, Any>>
+    ) {
+        val entityList = ArrayList<SharedSessionEntity>()
+        for ((userId, deviceMap) in sessionMap) {
+            for (deviceId in deviceMap.keys) {
+                entityList.add(SharedSessionEntity(
+                    roomId = roomId,
+                    sessionId = sessionId,
+                    userId = userId,
+                    deviceId = deviceId,
+                    deviceIdentityKey = "",
+                    chainIndex = 0
+                ))
+            }
+        }
+        doRealmTransaction(realmConfiguration) { realm ->
+            realm.insert(entityList)
         }
     }
 

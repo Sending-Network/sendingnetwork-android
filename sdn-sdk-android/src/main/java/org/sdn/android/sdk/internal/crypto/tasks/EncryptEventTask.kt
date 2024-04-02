@@ -17,6 +17,7 @@ package org.sdn.android.sdk.internal.crypto.tasks
 
 import dagger.Lazy
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
+import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_RATCHET
 import org.sdn.android.sdk.api.session.crypto.CryptoService
 import org.sdn.android.sdk.api.session.crypto.model.MXEncryptEventContentResult
 import org.sdn.android.sdk.api.session.crypto.model.MXEventDecryptionResult
@@ -28,6 +29,7 @@ import org.sdn.android.sdk.api.util.awaitCallback
 import org.sdn.android.sdk.internal.database.mapper.ContentMapper
 import org.sdn.android.sdk.internal.session.room.send.LocalEchoRepository
 import org.sdn.android.sdk.internal.task.Task
+import timber.log.Timber
 import javax.inject.Inject
 
 internal interface EncryptEventTask : Task<EncryptEventTask.Params, Event> {
@@ -46,6 +48,12 @@ internal class DefaultEncryptEventTask @Inject constructor(
     override suspend fun execute(params: EncryptEventTask.Params): Event {
         // don't want to wait for any query
         // if (!params.crypto.isRoomEncrypted(params.roomId)) return params.event
+
+        val memberNum = cryptoService.get().getRoomUserIds(params.roomId).size
+        if (memberNum > 200) {
+            Timber.i("## EncryptEventTask: skip encrypting event for room ${params.roomId} with member count $memberNum")
+            return params.event
+        }
         val localEvent = params.event
         require(localEvent.eventId != null)
         require(localEvent.type != null)
@@ -72,7 +80,7 @@ internal class DefaultEncryptEventTask @Inject constructor(
             val safeResult = result.copy(eventContent = modifiedContent)
             // Better handling of local echo, to avoid decrypting transition on remote echo
             // Should I only do it for text messages?
-            val decryptionLocalEcho = if (result.eventContent["algorithm"] == MXCRYPTO_ALGORITHM_MEGOLM) {
+            val decryptionLocalEcho = if (arrayOf(MXCRYPTO_ALGORITHM_MEGOLM, MXCRYPTO_ALGORITHM_RATCHET).contains(result.eventContent["algorithm"])) {
                 MXEventDecryptionResult(
                         clearEvent = Event(
                                 type = localEvent.type,

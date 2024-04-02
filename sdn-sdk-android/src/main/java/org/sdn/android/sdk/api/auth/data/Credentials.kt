@@ -55,7 +55,9 @@ data class Credentials(
          * reconfigure themselves, optionally validating the URLs within.
          * This object takes the same form as the one returned from .well-known autodiscovery.
          */
-        @Json(name = "well_known") val discoveryInformation: DiscoveryInformation? = null
+        @Json(name = "well_known") val discoveryInformation: DiscoveryInformation? = null,
+
+        @Json(name = "login_time") var loginTime: Long = 0,
 )
 
 internal fun Credentials.sessionId(): String {

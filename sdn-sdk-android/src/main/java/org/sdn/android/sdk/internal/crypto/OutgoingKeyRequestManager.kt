@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.sdn.android.sdk.api.SDNCoroutineDispatchers
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
+import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_RATCHET
 import org.sdn.android.sdk.api.crypto.MXCryptoConfig
 import org.sdn.android.sdk.api.extensions.tryOrNull
 import org.sdn.android.sdk.api.logger.LoggerTag
@@ -84,6 +85,12 @@ internal class OutgoingKeyRequestManager @Inject constructor(
     private val requestDiscardedBecauseAlreadySentThatCouldBeTriedWithBackup = Stack<Pair<String, String>>()
 
     fun requestKeyForEvent(event: Event, force: Boolean) {
+
+        if (!force && event.originServerTs != null && event.originServerTs < deviceListManager.getSessionLoginTime()) {
+            Timber.i("skip requesting keys for old event: ${event.eventId}")
+            return
+        }
+
         val (targets, body) = getRoomKeyRequestTargetForEvent(event) ?: return
         val index = ratchetIndexForMessage(event) ?: 0
         postRoomKeyRequest(body, targets, index, force)
@@ -94,7 +101,7 @@ internal class OutgoingKeyRequestManager @Inject constructor(
         val encryptedEventContent = event.content.toModel<EncryptedEventContent>() ?: return null.also {
             Timber.tag(loggerTag.value).e("getRoomKeyRequestTargetForEvent Failed to re-request key, null content")
         }
-        if (encryptedEventContent.algorithm != MXCRYPTO_ALGORITHM_MEGOLM) return null
+        if (!arrayOf(MXCRYPTO_ALGORITHM_MEGOLM, MXCRYPTO_ALGORITHM_RATCHET).contains(encryptedEventContent.algorithm)) return null
 
         val senderDevice = encryptedEventContent.deviceId
         val recipients = if (cryptoConfig.limitRoomKeyRequestsToMyDevices) {
@@ -285,7 +292,6 @@ internal class OutgoingKeyRequestManager @Inject constructor(
         // do we have known requests for that session??
         Timber.tag(loggerTag.value).v("Cancel Key Request if needed for $sessionId")
         val knownRequest = cryptoStore.getOutgoingRoomKeyRequest(
-                algorithm = MXCRYPTO_ALGORITHM_MEGOLM,
                 roomId = roomId,
                 sessionId = sessionId,
                 senderKey = senderKey

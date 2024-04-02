@@ -45,6 +45,7 @@ import org.matrix.olm.OlmMessage
 import org.matrix.olm.OlmOutboundGroupSession
 import org.matrix.olm.OlmSession
 import org.matrix.olm.OlmUtility
+import org.sdn.android.sdk.internal.crypto.algorithms.megolm.AESUtil
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -516,6 +517,7 @@ internal class MXOlmDevice @Inject constructor(
 
             return MXOutboundSessionInfo(
                     sessionId = sessionId,
+                    senderKey = this.deviceCurve25519Key,
                     sharedWithHelper = SharedWithHelper(roomId, sessionId, store),
                     clock = clock,
                     creationTime = restoredOutboundGroupSession.creationTime,
@@ -610,6 +612,7 @@ internal class MXOlmDevice @Inject constructor(
             sessionId: String,
             sessionKey: String,
             roomId: String,
+            algorithm: String,
             senderKey: String,
             forwardingCurve25519KeyChain: List<String>,
             keysClaimed: Map<String, String>,
@@ -694,6 +697,7 @@ internal class MXOlmDevice @Inject constructor(
         val candidateSessionData = InboundGroupSessionData(
                 senderKey = senderKey,
                 roomId = roomId,
+                algorithm = algorithm,
                 keysClaimed = keysClaimed,
                 forwardingCurve25519KeyChain = forwardingCurve25519KeyChain,
                 sharedHistory = sharedHistory,
@@ -860,6 +864,47 @@ internal class MXOlmDevice @Inject constructor(
         )
     }
 
+    @Throws(MXCryptoError::class)
+    suspend fun decryptRatchetMessage(
+        body: String,
+        roomId: String,
+        timeline: String?,
+        eventId: String,
+        sessionId: String,
+        senderKey: String
+    ): OlmDecryptionResult {
+        val sessionHolder = getInboundGroupSession(sessionId, senderKey, roomId)
+        val wrapper = sessionHolder.wrapper
+        val inboundGroupSession = wrapper.session
+        if (roomId != wrapper.roomId) {
+            // Check that the room id matches the original one for the session. This stops
+            // the HS pretending a message was targeting a different room.
+            val reason = String.format(MXCryptoError.INBOUND_SESSION_MISMATCH_ROOM_ID_REASON, roomId, wrapper.roomId)
+            Timber.tag(loggerTag.value).e("## decryptGroupMessage() : $reason")
+            throw MXCryptoError.Base(MXCryptoError.ErrorType.INBOUND_SESSION_MISMATCH_ROOM_ID, reason)
+        }
+        val internalKey = inboundGroupSession.export(0)
+        Timber.i("aes decrypt with sessionId: $sessionId, key: $internalKey, ciphertext: $body")
+        val decryptedMessage = AESUtil.decrypt(internalKey.toByteArray().copyOfRange(0, 16), body)
+
+        val payload = try {
+            val adapter = MoshiProvider.providesMoshi().adapter<JsonDict>(JSON_DICT_PARAMETERIZED_TYPE)
+            val payloadString = convertFromUTF8(decryptedMessage)
+            adapter.fromJson(payloadString)
+        } catch (e: Exception) {
+            Timber.tag(loggerTag.value).e("## decryptGroupMessage() : fails to parse the payload")
+            throw MXCryptoError.Base(MXCryptoError.ErrorType.BAD_DECRYPTED_FORMAT, MXCryptoError.BAD_DECRYPTED_FORMAT_TEXT_REASON)
+        }
+
+        return OlmDecryptionResult(
+            payload,
+            wrapper.sessionData.keysClaimed,
+            senderKey,
+            wrapper.sessionData.forwardingCurve25519KeyChain,
+            isSafe = sessionHolder.wrapper.sessionData.trusted.orFalse()
+        )
+    }
+
     /**
      * Reset replay attack data for the given timeline.
      *
@@ -942,6 +987,21 @@ internal class MXOlmDevice @Inject constructor(
             Timber.tag(loggerTag.value).w("## getInboundGroupSession() : UISI $sessionId")
             throw MXCryptoError.Base(MXCryptoError.ErrorType.UNKNOWN_INBOUND_SESSION_ID, MXCryptoError.UNKNOWN_INBOUND_SESSION_ID_REASON)
         }
+    }
+
+    /**
+     * Extract the current InboundGroupSession from the session store
+     *
+     * @param roomId the room where the session is used.
+     * @return the inbound group session.
+     */
+    fun getCurrentGroupSession(roomId: String): InboundGroupSessionHolder? {
+
+        val session = store.getCurrentGroupSession(roomId)
+        if (session != null) {
+            return InboundGroupSessionHolder(session)
+        }
+        return null
     }
 
     /**

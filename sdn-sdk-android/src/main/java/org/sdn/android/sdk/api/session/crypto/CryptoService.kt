@@ -170,6 +170,8 @@ interface CryptoService {
 
     fun decryptEventAsync(event: Event, timeline: String, callback: SDNCallback<MXEventDecryptionResult>)
 
+    fun getRoomUserIds(roomId: String): List<String>
+
     fun getEncryptionAlgorithm(roomId: String): String?
 
     fun shouldEncryptForInvitedMembers(roomId: String): Boolean

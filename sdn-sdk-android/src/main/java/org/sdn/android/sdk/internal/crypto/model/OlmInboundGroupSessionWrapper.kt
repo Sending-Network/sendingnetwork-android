@@ -16,7 +16,6 @@
 
 package org.sdn.android.sdk.internal.crypto.model
 
-import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
 import org.sdn.android.sdk.internal.crypto.MegolmSessionData
 import org.matrix.olm.OlmInboundGroupSession
 import timber.log.Timber
@@ -33,6 +32,9 @@ internal class OlmInboundGroupSessionWrapper : Serializable {
 
     // The room in which this session is used.
     var roomId: String? = null
+
+    // The algorithm in which this session is used.
+    var algorithm: String? = null
 
     // The base64-encoded curve25519 key of the sender.
     var senderKey: String? = null
@@ -95,6 +97,7 @@ internal class OlmInboundGroupSessionWrapper : Serializable {
             senderKey = megolmSessionData.senderKey
             keysClaimed = megolmSessionData.senderClaimedKeys
             roomId = megolmSessionData.roomId
+            roomId = megolmSessionData.algorithm
         } catch (e: Exception) {
             throw Exception(e.message)
         }
@@ -123,7 +126,7 @@ internal class OlmInboundGroupSessionWrapper : Serializable {
                     roomId = roomId,
                     sessionId = olmInboundGroupSession!!.sessionIdentifier(),
                     sessionKey = olmInboundGroupSession!!.export(olmInboundGroupSession!!.firstKnownIndex),
-                    algorithm = MXCRYPTO_ALGORITHM_MEGOLM
+                    algorithm = algorithm
             )
         } catch (e: Exception) {
             Timber.e(e, "## export() : senderKey $senderKey failed")

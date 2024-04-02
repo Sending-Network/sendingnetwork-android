@@ -34,7 +34,8 @@ import javax.inject.Inject
 internal interface DidPreLoginTask : Task<DidPreLoginTask.Params, LoginDidMsg> {
     data class Params(
         val edgeNodeConnectionConfig: EdgeNodeConnectionConfig,
-        val address: String
+        val address: String,
+        val deviceId: String
     )
 }
 
@@ -57,9 +58,9 @@ internal class DefaultDidPreLoginTask @Inject constructor(
                 authAPI.didList(params.address)
             }
             val loginParams = if (didListResp.data.isNotEmpty()) {
-                PreLoginParams("", didListResp.data[0])
+                PreLoginParams("", didListResp.data[0], params.deviceId)
             } else {
-                PreLoginParams(params.address, "")
+                PreLoginParams(params.address, "", params.deviceId)
             }
 
             executeRequest(null) {

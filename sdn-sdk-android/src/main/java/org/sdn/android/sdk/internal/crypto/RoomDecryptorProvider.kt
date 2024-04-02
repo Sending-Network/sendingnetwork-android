@@ -17,8 +17,10 @@
 package org.sdn.android.sdk.internal.crypto
 
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
+import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_RATCHET
 import org.sdn.android.sdk.api.session.crypto.NewSessionListener
 import org.sdn.android.sdk.internal.crypto.algorithms.IMXDecrypting
+import org.sdn.android.sdk.internal.crypto.algorithms.megolm.MXRatchetDecryptionFactory
 import org.sdn.android.sdk.internal.crypto.algorithms.megolm.MXMegolmDecryptionFactory
 import org.sdn.android.sdk.internal.crypto.algorithms.olm.MXOlmDecryptionFactory
 import org.sdn.android.sdk.internal.session.SessionScope
@@ -28,7 +30,8 @@ import javax.inject.Inject
 @SessionScope
 internal class RoomDecryptorProvider @Inject constructor(
         private val olmDecryptionFactory: MXOlmDecryptionFactory,
-        private val megolmDecryptionFactory: MXMegolmDecryptionFactory
+        private val megolmDecryptionFactory: MXMegolmDecryptionFactory,
+        private val ratchetDecryptionFactory: MXRatchetDecryptionFactory
 ) {
 
     // A map from algorithm to MXDecrypting instance, for each room
@@ -73,6 +76,19 @@ internal class RoomDecryptorProvider @Inject constructor(
         if (decryptingClass) {
             val alg = when (algorithm) {
                 MXCRYPTO_ALGORITHM_MEGOLM -> megolmDecryptionFactory.create().apply {
+                    this.newSessionListener = object : NewSessionListener {
+                        override fun onNewSession(roomId: String?, senderKey: String, sessionId: String) {
+                            // PR reviewer: the parameter has been renamed so is now in conflict with the parameter of getOrCreateRoomDecryptor
+                            newSessionListeners.toList().forEach {
+                                try {
+                                    it.onNewSession(roomId, senderKey, sessionId)
+                                } catch (ignore: Throwable) {
+                                }
+                            }
+                        }
+                    }
+                }
+                MXCRYPTO_ALGORITHM_RATCHET -> ratchetDecryptionFactory.create().apply {
                     this.newSessionListener = object : NewSessionListener {
                         override fun onNewSession(roomId: String?, senderKey: String, sessionId: String) {
                             // PR reviewer: the parameter has been renamed so is now in conflict with the parameter of getOrCreateRoomDecryptor

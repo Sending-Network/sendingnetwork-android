@@ -17,6 +17,7 @@
 package org.sdn.android.sdk.sample.ui
 
 import android.content.Context
+import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -41,12 +42,19 @@ import org.sdn.android.sdk.sample.databinding.FragmentRoomDetailBinding
 import org.sdn.android.sdk.sample.utils.*
 
 import org.sdn.android.sdk.api.meet.SdnMeetActivity
-import android.util.Log
-import kotlinx.coroutines.GlobalScope
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-//import com.github.zhanghai.android.kotlin.BaseEncoding
 import org.apache.commons.codec.binary.Base32
+import org.sdn.android.sdk.api.session.events.model.toModel
+import org.sdn.android.sdk.api.session.room.model.message.MessageContent
+import org.sdn.android.sdk.sample.R
+import org.sdn.android.sdk.sample.data.TimelineEventMessageWrapper
+import org.sdn.android.sdk.sample.ui.dialog.PasswordDialogFragment
 
 class RoomDetailFragment : Fragment(), Timeline.Listener, ToolbarConfigurable {
 
@@ -112,6 +120,18 @@ class RoomDetailFragment : Fragment(), Timeline.Listener, ToolbarConfigurable {
             }
         })
 
+        adapter.setOnMessageLongClickListener {
+            val event = (it as TimelineEventMessageWrapper).getTimelineEvent()
+             with(AlertDialog.Builder(requireContext())) {
+//                setTitle("Androidly Alert")
+                setMessage("Request decryption key?")
+                setPositiveButton(R.string.ok) { _: DialogInterface, _: Int ->
+                    session.cryptoService().reRequestRoomKeyForEvent(event.root)
+                }
+                setNegativeButton(R.string.cancel, null)
+                show()
+            }
+        }
         views.timelineEventList.setAdapter(adapter)
         views.timelineEventList.itemAnimator = null
         views.timelineEventList.addOnScrollListener(RecyclerScrollMoreListener(views.timelineEventList.layoutManager as LinearLayoutManager) {
@@ -149,11 +169,39 @@ class RoomDetailFragment : Fragment(), Timeline.Listener, ToolbarConfigurable {
             }
         }
 
-        views.toolbarBtnVideo.setOnClickListener {
-            Log.d("getMeeting","start")
-            GlobalScope.launch {
-                joinRoomMeeting(context!!, roomID)
+        setHasOptionsMenu(true)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.room_detail_options, menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.invite -> {
+                val dlg = PasswordDialogFragment.newInstance("")
+                dlg.show(childFragmentManager, "")
+                true
             }
+            R.id.meeting -> {
+                room?.roomId?.let {
+                    lifecycleScope.launch {
+                        joinRoomMeeting(requireContext(), it)
+                    }
+                }
+                true
+            }
+            R.id.leave -> {
+                room?.roomId?.let {
+                    lifecycleScope.launch {
+                        session.roomService().leaveRoom(it)
+                        showRoomList()
+                    }
+                }
+                true
+            }
+
+            else -> super.onOptionsItemSelected(item)
         }
     }
 
@@ -215,5 +263,11 @@ class RoomDetailFragment : Fragment(), Timeline.Listener, ToolbarConfigurable {
         }
     }
 
-
+    private fun showRoomList() {
+        (activity as MainActivity).supportFragmentManager
+            .beginTransaction()
+            .addToBackStack(null)
+            .replace(R.id.fragmentContainer, RoomListFragment())
+            .commit()
+    }
 }

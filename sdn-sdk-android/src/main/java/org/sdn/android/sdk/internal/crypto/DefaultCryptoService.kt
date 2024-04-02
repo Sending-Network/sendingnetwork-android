@@ -25,6 +25,7 @@ import dagger.Lazy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -32,6 +33,7 @@ import org.sdn.android.sdk.api.SDNCallback
 import org.sdn.android.sdk.api.SDNCoroutineDispatchers
 import org.sdn.android.sdk.api.NoOpSDNCallback
 import org.sdn.android.sdk.api.auth.UserInteractiveAuthInterceptor
+import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_RATCHET
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_MEGOLM
 import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_OLM
 import org.sdn.android.sdk.api.crypto.MXCryptoConfig
@@ -79,6 +81,7 @@ import org.sdn.android.sdk.internal.crypto.actions.MegolmSessionDataImporter
 import org.sdn.android.sdk.internal.crypto.actions.SetDeviceVerificationAction
 import org.sdn.android.sdk.internal.crypto.algorithms.IMXEncrypting
 import org.sdn.android.sdk.internal.crypto.algorithms.IMXGroupEncryption
+import org.sdn.android.sdk.internal.crypto.algorithms.megolm.MXRatchetEncryptionFactory
 import org.sdn.android.sdk.internal.crypto.algorithms.megolm.MXMegolmEncryptionFactory
 import org.sdn.android.sdk.internal.crypto.algorithms.megolm.UnRequestedForwardManager
 import org.sdn.android.sdk.internal.crypto.algorithms.olm.MXOlmEncryptionFactory
@@ -110,6 +113,13 @@ import org.sdn.android.sdk.internal.task.launchToCallback
 import org.sdn.android.sdk.internal.util.JsonCanonicalizer
 import org.sdn.android.sdk.internal.util.time.Clock
 import org.matrix.olm.OlmManager
+import org.sdn.android.sdk.api.session.crypto.model.OlmDecryptionResult
+import org.sdn.android.sdk.api.session.crypto.model.RoomKeyRequestBody
+import org.sdn.android.sdk.api.session.events.model.content.EncryptedEventContent
+import org.sdn.android.sdk.api.session.events.model.content.OlmEventContent
+import org.sdn.android.sdk.api.session.room.model.message.MessageContent
+import org.sdn.android.sdk.api.session.sync.model.ToDeviceSyncResponse
+import org.sdn.android.sdk.internal.crypto.tasks.PullSessionKeysTask
 import timber.log.Timber
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -170,9 +180,11 @@ internal class DefaultCryptoService @Inject constructor(
     private val megolmSessionDataImporter: MegolmSessionDataImporter,
     private val warnOnUnknownDevicesRepository: WarnOnUnknownDeviceRepository,
         // Repository
+    private val ratchetEncryptionFactory: MXRatchetEncryptionFactory,
     private val megolmEncryptionFactory: MXMegolmEncryptionFactory,
     private val olmEncryptionFactory: MXOlmEncryptionFactory,
         // Tasks
+    private val pullSessionKeysTask: PullSessionKeysTask,
     private val deleteDeviceTask: DeleteDeviceTask,
     private val getDevicesTask: GetDevicesTask,
     private val getDeviceInfoTask: GetDeviceInfoTask,
@@ -513,7 +525,7 @@ internal class DefaultCryptoService @Inject constructor(
      * @return the device info, or null if not found / unsupported algorithm / crypto released
      */
     override fun deviceWithIdentityKey(senderKey: String, algorithm: String): CryptoDeviceInfo? {
-        return if (algorithm != MXCRYPTO_ALGORITHM_MEGOLM && algorithm != MXCRYPTO_ALGORITHM_OLM) {
+        return if (algorithm != MXCRYPTO_ALGORITHM_RATCHET && algorithm != MXCRYPTO_ALGORITHM_MEGOLM && algorithm != MXCRYPTO_ALGORITHM_OLM) {
             // We only deal in olm keys
             null
         } else cryptoStore.deviceWithIdentityKey(senderKey)
@@ -646,13 +658,14 @@ internal class DefaultCryptoService @Inject constructor(
         }
 
         val alg: IMXEncrypting? = when (algorithm) {
+            MXCRYPTO_ALGORITHM_RATCHET -> ratchetEncryptionFactory.create(roomId)
             MXCRYPTO_ALGORITHM_MEGOLM -> megolmEncryptionFactory.create(roomId)
             MXCRYPTO_ALGORITHM_OLM -> olmEncryptionFactory.create(roomId)
             else -> null
         }
 
         if (alg != null) {
-            roomEncryptorsStore.put(roomId, alg)
+            roomEncryptorsStore.put(roomId, algorithm!!, alg)
         }
 
         // if encryption was not previously enabled in this room, we will have been
@@ -676,10 +689,10 @@ internal class DefaultCryptoService @Inject constructor(
     }
 
     /**
-     * Tells if a room is encrypted with MXCRYPTO_ALGORITHM_MEGOLM.
+     * Tells if a room is encrypted.
      *
      * @param roomId the room id
-     * @return true if the room is encrypted with algorithm MXCRYPTO_ALGORITHM_MEGOLM
+     * @return true if the room is encrypted
      */
     override fun isRoomEncrypted(roomId: String): Boolean {
         return cryptoSessionInfoProvider.isRoomEncrypted(roomId)
@@ -729,7 +742,9 @@ internal class DefaultCryptoService @Inject constructor(
         // moved to crypto scope to have uptodate values
         cryptoCoroutineScope.launch(coroutineDispatchers.crypto) {
             val userIds = getRoomUserIds(roomId)
-            var alg = roomEncryptorsStore.get(roomId)
+            val memberNumThreshold = 0
+            val algId = if (userIds.count() > memberNumThreshold) MXCRYPTO_ALGORITHM_RATCHET else MXCRYPTO_ALGORITHM_MEGOLM
+            var alg = roomEncryptorsStore.get(roomId, algId)
             if (alg == null) {
                 val algorithm = getEncryptionAlgorithm(roomId)
                 if (algorithm != null) {
@@ -738,6 +753,7 @@ internal class DefaultCryptoService @Inject constructor(
                     }
                 }
             }
+
             val safeAlgorithm = alg
             if (safeAlgorithm != null) {
                 val t0 = clock.epochMillis()
@@ -779,7 +795,20 @@ internal class DefaultCryptoService @Inject constructor(
      */
     @Throws(MXCryptoError::class)
     override suspend fun decryptEvent(event: Event, timeline: String): MXEventDecryptionResult {
-        return internalDecryptEvent(event, timeline)
+        try {
+            return internalDecryptEvent(event, timeline)
+        } catch (exception: MXCryptoError) {
+            if (exception is MXCryptoError.Base) {
+                if (exception.errorType == MXCryptoError.ErrorType.UNKNOWN_INBOUND_SESSION_ID) {
+                    val algorithm = event.content?.get("algorithm")?.toString()
+                    if (algorithm == MXCRYPTO_ALGORITHM_MEGOLM || algorithm == MXCRYPTO_ALGORITHM_RATCHET) {
+                        pullRoomKeyForEvent(event)
+                    }
+                }
+            }
+
+            throw exception
+        }
     }
 
     /**
@@ -825,7 +854,7 @@ internal class DefaultCryptoService @Inject constructor(
             when (event.getClearType()) {
                 EventType.ROOM_KEY, EventType.FORWARDED_ROOM_KEY -> {
                     // Keys are imported directly, not waiting for end of sync
-                    onRoomKeyEvent(event)
+                    onRoomKeyEvent(event, true)
                 }
                 EventType.REQUEST_SECRET -> {
                     secretShareManager.handleSecretRequest(event)
@@ -838,7 +867,10 @@ internal class DefaultCryptoService @Inject constructor(
                         // very silly, it won't work because an Olm session cannot send
                         // messages to itself.
                         if (req.requestingDeviceId != deviceId) { // ignore self requests
-                            event.senderId?.let { incomingKeyRequestManager.addNewIncomingRequest(it, req) }
+                            event.senderId?.let {
+                                ensureRequestingUserDevice(it, req.requestingDeviceId)
+                                incomingKeyRequestManager.addNewIncomingRequest(it, req)
+                            }
                         }
                     }
                 }
@@ -854,6 +886,20 @@ internal class DefaultCryptoService @Inject constructor(
             }
         }
         liveEventManager.get().dispatchOnLiveToDevice(event)
+    }
+
+    private suspend fun ensureRequestingUserDevice(userId: String?, deviceId: String?) : CryptoDeviceInfo? {
+        if (userId == null || deviceId == null) {
+            return null
+        }
+        var requestingDevice = cryptoStore.getUserDevice(userId, deviceId)
+        if (requestingDevice == null) {
+            Timber.tag(loggerTag.value).w("ensureRequestingUserDevice() : Unknown device: $userId | $deviceId")
+
+            val deviceMap = deviceListManager.downloadKeys(listOf(userId), true)
+            requestingDevice = deviceMap.getObject(userId, deviceId)
+        }
+        return requestingDevice
     }
 
     /**
@@ -955,7 +1001,7 @@ internal class DefaultCryptoService @Inject constructor(
         }
     }
 
-    private fun getRoomUserIds(roomId: String): List<String> {
+    override fun getRoomUserIds(roomId: String): List<String> {
         val encryptForInvitedMembers = isEncryptionEnabledForInvitedUser() &&
                 shouldEncryptForInvitedMembers(roomId)
         return cryptoSessionInfoProvider.getRoomUserIds(roomId, encryptForInvitedMembers)
@@ -1220,10 +1266,116 @@ internal class DefaultCryptoService @Inject constructor(
      */
     override fun reRequestRoomKeyForEvent(event: Event) {
         outgoingKeyRequestManager.requestKeyForEvent(event, true)
+        pullRoomKeyForEvent(event)
     }
 
     override fun requestRoomKeyForEvent(event: Event) {
         outgoingKeyRequestManager.requestKeyForEvent(event, false)
+        pullRoomKeyForEvent(event)
+    }
+
+    private fun pullRoomKeyForEvent(event: Event) {
+        if (event.originServerTs != null && event.originServerTs < deviceListManager.getSessionLoginTime()) {
+            Timber.i("skip pulling keys for old event: ${event.eventId}")
+            return
+        }
+
+        val encryptedEventContent = event.content.toModel<EncryptedEventContent>()
+        if (encryptedEventContent == null) {
+            Timber.tag(loggerTag.value).e("getRoomKeyRequestTargetForEvent Failed to re-request key, null content")
+            return
+        }
+
+        val requestBody = RoomKeyRequestBody(
+            roomId = event.roomId,
+            algorithm = encryptedEventContent.algorithm,
+            senderKey = encryptedEventContent.senderKey,
+            sessionId = encryptedEventContent.sessionId
+        )
+
+        cryptoCoroutineScope.launch(coroutineDispatchers.crypto) {
+            delay(5000L)
+            pullRoomKey(requestBody)
+        }
+    }
+
+    private fun pullRoomKey(requestBody: RoomKeyRequestBody) {
+        val roomId = requestBody.roomId ?: ""
+        val senderKey = requestBody.senderKey ?: ""
+        val sessionId = requestBody.sessionId ?: ""
+
+        if (olmDevice.hasInboundSessionKeys(roomId, senderKey, sessionId)) {
+            Timber.i("skip pull room key for $sessionId")
+            return
+        }
+
+        val callback = object : SDNCallback<ToDeviceSyncResponse> {
+            override fun onFailure(failure: Throwable) {
+                Timber.e("pullRoomKey for $sessionId fail: $failure")
+            }
+
+            override fun onSuccess(data: ToDeviceSyncResponse) {
+                Timber.e("pullRoomKey for $sessionId return ${data.events?.size} events")
+                cryptoCoroutineScope.launch(coroutineDispatchers.crypto) {
+                    data.events?.forEachIndexed { _, event ->
+                        // Decrypt event if necessary
+                        Timber.i("To device event from ${event.senderId} of type:${event.type}")
+                        decryptToDeviceEvent(event, null)
+                        if (event.getClearType() == EventType.MESSAGE &&
+                            event.getClearContent()?.toModel<MessageContent>()?.msgType == "m.bad.encrypted") {
+                            Timber.e("handleToDeviceEvent() : Warning: Unable to decrypt to-device event : ${event.content}")
+                        } else {
+                            verificationService.onToDeviceEvent(event)
+                            onToDeviceEvent(event)
+                        }
+                    }
+                }
+            }
+        }
+        pullSessionKeysTask
+            .configureWith(PullSessionKeysTask.Params(sessionId)) {
+                this.executionThread = TaskThread.CRYPTO
+                this.callback = callback
+            }
+            .executeBy(taskExecutor)
+    }
+
+    private suspend fun decryptToDeviceEvent(event: Event, timelineId: String?): Boolean {
+        Timber.v("## CRYPTO | decryptToDeviceEvent")
+        if (event.getClearType() == EventType.ENCRYPTED) {
+            var result: MXEventDecryptionResult? = null
+            try {
+                result = decryptEvent(event, timelineId ?: "")
+            } catch (exception: MXCryptoError) {
+                event.mCryptoError = (exception as? MXCryptoError.Base)?.errorType // setCryptoError(exception.cryptoError)
+                val senderKey = event.content.toModel<OlmEventContent>()?.senderKey ?: "<unknown sender key>"
+                // try to find device id to ease log reading
+                val deviceId = getCryptoDeviceInfo(event.senderId!!).firstOrNull {
+                    it.identityKey() == senderKey
+                }?.deviceId ?: senderKey
+                Timber.e("## CRYPTO | Failed to decrypt to device event from ${event.senderId}|$deviceId reason:<${event.mCryptoError ?: exception}>")
+            } catch (failure: Throwable) {
+                Timber.e(failure, "## CRYPTO | Failed to decrypt to device event from ${event.senderId}")
+            }
+
+            if (null != result) {
+                event.mxDecryptionResult = OlmDecryptionResult(
+                    payload = result.clearEvent,
+                    senderKey = result.senderCurve25519Key,
+                    keysClaimed = result.claimedEd25519Key?.let { mapOf("ed25519" to it) },
+                    forwardingCurve25519KeyChain = result.forwardingCurve25519KeyChain,
+                    isSafe = result.isSafe
+                )
+                return true
+            } else {
+                // Could happen for to device events
+                // None of the known session could decrypt the message
+                // In this case unwedging process might have been started (rate limited)
+                Timber.e("## CRYPTO | ERROR NULL DECRYPTION RESULT from ${event.senderId}")
+            }
+        }
+
+        return false
     }
 
     /**
