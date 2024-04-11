@@ -678,7 +678,11 @@ internal class DefaultCryptoService @Inject constructor(
 
             val userIds = ArrayList(membersId)
 
-            deviceListManager.startTrackingDeviceList(userIds)
+            if (userIds.size > 200) {
+                Timber.w("skip tracking devices for room $roomId with ${userIds.size} members")
+            } else {
+                deviceListManager.startTrackingDeviceList(userIds)
+            }
 
             if (!inhibitDeviceQuery) {
                 deviceListManager.refreshOutdatedDeviceLists()

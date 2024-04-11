@@ -148,8 +148,12 @@ internal class DeviceListManager @Inject constructor(
             if (cryptoSessionInfoProvider.isRoomEncrypted(roomId)) {
                 // It's OK to track also device for invited users
                 val userIds = cryptoSessionInfoProvider.getRoomUserIds(roomId, true)
-                startTrackingDeviceList(userIds)
-                refreshOutdatedDeviceLists()
+                if (userIds.size > 200) {
+                    Timber.w("skip tracking devices for room $roomId with ${userIds.size} members")
+                } else {
+                    startTrackingDeviceList(userIds)
+                    refreshOutdatedDeviceLists()
+                }
             }
         }
     }
