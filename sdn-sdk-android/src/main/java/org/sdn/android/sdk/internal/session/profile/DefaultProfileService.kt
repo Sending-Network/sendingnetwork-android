@@ -46,6 +46,7 @@ internal class DefaultProfileService @Inject constructor(
     private val getProfileInfoTask: GetProfileInfoTask,
     private val setDisplayNameTask: SetDisplayNameTask,
     private val setAvatarUrlTask: SetAvatarUrlTask,
+    private val setProfileBioTask: SetProfileBioTask,
     private val addThreePidTask: AddThreePidTask,
     private val validateSmsCodeTask: ValidateSmsCodeTask,
     private val finalizeAddingThreePidTask: FinalizeAddingThreePidTask,
@@ -82,9 +83,16 @@ internal class DefaultProfileService @Inject constructor(
         return Optional.from(avatarUrl)
     }
 
+    override suspend fun setProfileBio(userId: String, bio: String) {
+        val params = SetProfileBioTask.Params(userId, bio)
+        return setProfileBioTask.execute(params)
+    }
+
     override suspend fun getProfile(userId: String): JsonDict {
         val params = GetProfileInfoTask.Params(userId)
-        return getProfileInfoTask.execute(params)
+        val profileJson = getProfileInfoTask.execute(params).toMutableMap()
+        profileJson["bio"] = profileJson["signature"] ?: ""
+        return profileJson
     }
 
     override fun getThreePids(): List<ThreePid> {

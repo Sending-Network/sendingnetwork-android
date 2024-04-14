@@ -65,6 +65,13 @@ interface ProfileService {
     suspend fun getAvatarUrl(userId: String): Optional<String>
 
     /**
+     * Update the bio for this user.
+     * @param userId the userId to update the display name of
+     * @param bio the new bio of the user
+     */
+    suspend fun setProfileBio(userId: String, bio: String)
+
+    /**
      * Get the combined profile information for this user.
      * This may return keys which are not limited to displayname or avatar_url.
      * If server is configured as limit_profile_requests_to_users_who_share_rooms: true then response can be HTTP 403.

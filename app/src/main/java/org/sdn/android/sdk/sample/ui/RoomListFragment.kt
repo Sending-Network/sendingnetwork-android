@@ -40,6 +40,7 @@ import org.sdn.android.sdk.sample.databinding.FragmentRoomListBinding
 import org.sdn.android.sdk.sample.formatter.RoomListDateFormatter
 import org.sdn.android.sdk.sample.utils.AvatarRenderer
 import org.sdn.android.sdk.sample.utils.SDNItemColorProvider
+import timber.log.Timber
 
 class RoomListFragment : Fragment(), ToolbarConfigurable {
 
@@ -145,6 +146,10 @@ class RoomListFragment : Fragment(), ToolbarConfigurable {
                 signOut()
                 true
             }
+            R.id.test_action -> {
+                testAction()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -165,6 +170,13 @@ class RoomListFragment : Fragment(), ToolbarConfigurable {
             requireActivity().supportFragmentManager
                 .beginTransaction().replace(R.id.fragmentContainer, fragment).commit()
 //            activity?.finish()
+        }
+    }
+
+    private fun testAction() {
+        lifecycleScope.launch {
+            val contacts = session.userService().getContacts()
+            Timber.i("get contacts: %s", contacts)
         }
     }
 

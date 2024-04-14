@@ -18,11 +18,13 @@
 
 package org.sdn.android.sdk.internal.session.user
 
+import org.sdn.android.sdk.api.session.user.model.ContactsResponse
 import org.sdn.android.sdk.api.util.JsonDict
 import org.sdn.android.sdk.internal.network.NetworkConstants
 import retrofit2.http.Body
 import retrofit2.http.PUT
 import retrofit2.http.DELETE
+import retrofit2.http.GET
 import retrofit2.http.HTTP
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -50,4 +52,6 @@ internal interface UpdateContactStatusAPI {
     @HTTP(method = "DELETE", path = NetworkConstants.URI_API_PREFIX_PATH_R0 + "contact/{user_id}", hasBody = true)
     suspend fun updateContactStatusRemove(@Path("user_id") userId: String, @Body body: JsonDict) : JsonDict
 
+    @GET(NetworkConstants.URI_API_PREFIX_PATH_R0 + "contacts_list/{user_id}")
+    suspend fun getContactsList(@Path("user_id") userId: String) : ContactsResponse
 }

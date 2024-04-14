@@ -6,5 +6,8 @@
         android:id="@+id/logout"
         android:title="Logout"
         app:showAsAction="always" />
+    <item
+        android:id="@+id/test_action"
+        android:title="TestAction" />
 
 </menu>

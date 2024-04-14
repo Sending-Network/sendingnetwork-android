@@ -27,6 +27,9 @@ import org.sdn.android.sdk.internal.session.user.accountdata.UpdateContactStatus
 import org.sdn.android.sdk.internal.session.user.accountdata.UpdateIgnoredUserIdsTask
 import org.sdn.android.sdk.internal.session.user.model.SearchUserTask
 import org.sdn.android.sdk.api.SDNCallback
+import org.sdn.android.sdk.api.session.user.model.ContactInfo
+import org.sdn.android.sdk.api.session.user.model.ContactsResponse
+import org.sdn.android.sdk.internal.session.user.accountdata.GetContactsListTask
 
 import javax.inject.Inject
 //import kotlinx.serialization.json.Json
@@ -36,7 +39,8 @@ internal class DefaultUserService @Inject constructor(
         private val searchUserTask: SearchUserTask,
         private val updateIgnoredUserIdsTask: UpdateIgnoredUserIdsTask,
         private val getProfileInfoTask: GetProfileInfoTask,
-        private val updateContactStatus: UpdateContactStatusTask
+        private val updateContactStatus: UpdateContactStatusTask,
+        private val getContactsListTask: GetContactsListTask
 ) : UserService {
 
     override fun getUser(userId: String): User? {
@@ -96,5 +100,23 @@ internal class DefaultUserService @Inject constructor(
         println("removeContact $parameter")
         var params = UpdateContactStatusTask.Params(parameterRemove = parameter);
         return updateContactStatus.execute(params)
+    }
+
+    override suspend fun getContacts(): List<ContactInfo> {
+        val contactsResp =  getContactsListTask.execute(Unit)
+        return contactsResp.people ?: listOf()
+    }
+
+    override suspend fun addContact(contactId: String, tags: List<String>) {
+        val params = UpdateContactStatusTask.Params(parameterAdd = mapOf(
+            "contact_id" to contactId,
+            "tags" to tags,
+        ))
+        updateContactStatus.execute(params)
+    }
+
+    override suspend fun removeContact(contactId: String) {
+        val params = UpdateContactStatusTask.Params(parameterRemove = mapOf("contact_id" to contactId))
+        updateContactStatus.execute(params)
     }
 }

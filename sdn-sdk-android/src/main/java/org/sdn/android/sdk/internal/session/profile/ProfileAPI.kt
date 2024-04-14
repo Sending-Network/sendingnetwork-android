@@ -63,6 +63,12 @@ internal interface ProfileAPI {
             @Body body: SetAvatarUrlBody
     )
 
+    @PUT(NetworkConstants.URI_API_PREFIX_PATH_R0 + "profile/{userId}/signature")
+    suspend fun setProfileBio(
+        @Path("userId") userId: String,
+        @Body body: SetProfileBioBody
+    )
+
     /**
      * Bind a threePid
      * Ref: https://matrix.org/docs/spec/client_server/latest#post-matrix-client-r0-account-3pid-bind

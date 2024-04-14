@@ -18,6 +18,7 @@ package org.sdn.android.sdk.api.session.user
 
 import androidx.lifecycle.LiveData
 import androidx.paging.PagedList
+import org.sdn.android.sdk.api.session.user.model.ContactInfo
 import org.sdn.android.sdk.api.session.user.model.User
 import org.sdn.android.sdk.api.util.JsonDict
 import org.sdn.android.sdk.api.util.Optional
@@ -94,11 +95,15 @@ interface UserService {
      * add contact 
      */
      suspend fun addContact(parameter: Map<String,  Any>): JsonDict
-   
+
      /**
      *map  key: contact_id  value: String Type ,map key: is_room , value: Int 
      * remove contact
      */
      suspend fun removeContact(parameter: Map<String, Any>): JsonDict
+
+     suspend fun getContacts(): List<ContactInfo>
+     suspend fun addContact(contactId: String, tags: List<String> = listOf())
+     suspend fun removeContact(contactId: String)
 
 }

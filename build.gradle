@@ -37,7 +37,12 @@ allprojects {
 //        mavenLocal()
         google()
         jcenter()
-        maven { url 'https://jitpack.io' }
+        maven {
+            url 'https://jitpack.io'
+            content {
+                excludeGroupByRegex "org\\.jitsi\\.react"
+            }
+        }
         maven { url "https://s01.oss.sonatype.org/content/groups/staging" }
         maven { url "https://github.com/jitsi/jitsi-maven-repository/raw/master/releases" }
     }

@@ -56,6 +56,9 @@ internal abstract class ProfileModule {
     abstract fun bindSetDisplayNameTask(task: DefaultSetDisplayNameTask): SetDisplayNameTask
 
     @Binds
+    abstract fun bindSetProfileBioTask(task: DefaultSetProfileBioTask): SetProfileBioTask
+
+    @Binds
     abstract fun bindSetAvatarUrlTask(task: DefaultSetAvatarUrlTask): SetAvatarUrlTask
 
     @Binds

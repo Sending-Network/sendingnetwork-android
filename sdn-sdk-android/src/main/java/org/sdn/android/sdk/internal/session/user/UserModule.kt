@@ -21,8 +21,10 @@ import dagger.Module
 import dagger.Provides
 import org.sdn.android.sdk.api.session.user.UserService
 import org.sdn.android.sdk.internal.session.SessionScope
+import org.sdn.android.sdk.internal.session.user.accountdata.DefaultGetContactsListTask
 import org.sdn.android.sdk.internal.session.user.accountdata.DefaultUpdateContactStatusTask
 import org.sdn.android.sdk.internal.session.user.accountdata.DefaultUpdateIgnoredUserIdsTask
+import org.sdn.android.sdk.internal.session.user.accountdata.GetContactsListTask
 import org.sdn.android.sdk.internal.session.user.accountdata.UpdateContactStatusTask
 import org.sdn.android.sdk.internal.session.user.accountdata.UpdateIgnoredUserIdsTask
 import org.sdn.android.sdk.internal.session.user.model.DefaultSearchUserTask
@@ -61,9 +63,9 @@ internal abstract class UserModule {
     @Binds
     abstract fun bindUserStore(store: RealmUserStore): UserStore
 
+    @Binds
+    abstract fun bindGetContactsListTask(task: DefaultGetContactsListTask): GetContactsListTask
 
     @Binds
     abstract fun bindUpdateContactStatusTask(task: DefaultUpdateContactStatusTask): UpdateContactStatusTask
-
-
 }
