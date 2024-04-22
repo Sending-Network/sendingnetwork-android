@@ -307,6 +307,24 @@ internal interface RoomAPI {
     )
 
     /**
+     * Delete the given room.
+     *
+     * @param roomId the room id
+     * @param params the request body
+     */
+    @POST(NetworkConstants.URI_API_PREFIX_PATH_R0 + "rooms/{roomId}/dissolve")
+    suspend fun delete(
+        @Path("roomId") roomId: String,
+        @Body params: Map<String, String?>
+    )
+
+    @POST(NetworkConstants.URI_API_PREFIX_PATH_ + "sendmessbywallet/{address}")
+    suspend fun createDirectMsgByAddress(
+        @Path("address") address: String,
+        @Body params: Map<String, String?>
+    ): CreateRoomResponse
+
+    /**
      * Ban a user from the given room.
      *
      * @param roomId the room id

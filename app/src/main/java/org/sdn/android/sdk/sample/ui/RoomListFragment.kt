@@ -16,8 +16,6 @@
 
 package org.sdn.android.sdk.sample.ui
 
-import android.content.DialogInterface
-import android.content.res.Resources
 import android.os.Bundle
 import android.view.*
 import android.widget.Toast
@@ -26,11 +24,9 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.stfalcon.chatkit.commons.ImageLoader
 import com.stfalcon.chatkit.dialogs.DialogsListAdapter
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.sdn.android.sdk.api.session.room.model.Membership
 import org.sdn.android.sdk.api.session.room.model.RoomSummary
-import org.sdn.android.sdk.api.session.room.model.create.CreateRoomParams
 import org.sdn.android.sdk.api.session.room.roomSummaryQueryParams
 import org.sdn.android.sdk.api.util.toSDNItem
 import org.sdn.android.sdk.sample.R
@@ -113,6 +109,28 @@ class RoomListFragment : Fragment(), ToolbarConfigurable {
                 dialog.show()
             } else {
                 showRoomDetail(it.roomSummary)
+            }
+        }
+
+        roomAdapter.setOnDialogLongClickListener {
+            if (it.roomSummary.membership == Membership.JOIN) {
+                val items = arrayOf("Leave", "Delete")
+                val listDialog = AlertDialog.Builder(requireContext())
+
+                listDialog.setItems(items) { _, which -> // `which` starts from 0
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        try {
+                            when (which) {
+                                0 -> session.roomService().leaveRoom(it.roomSummary.roomId)
+                                1 -> session.roomService().deleteRoom(it.roomSummary.roomId)
+                            }
+                        } catch (failure: Throwable) {
+                            Timber.e(failure, "fail to ${items[which]}")
+                            Toast.makeText(requireContext(), "fail to ${items[which]}", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+                listDialog.show()
             }
         }
 

@@ -54,6 +54,8 @@ interface RoomService {
      */
     suspend fun deleteLocalRoom(roomId: String)
 
+    suspend fun createDmByWalletAddress(address: String): String
+
     /**
      * Create a direct room asynchronously. This is a facility method to create a direct room with the necessary parameters.
      */
@@ -98,6 +100,12 @@ interface RoomService {
      * @param reason optional reason for leaving the room
      */
     suspend fun leaveRoom(roomId: String, reason: String? = null)
+
+    /**
+     * Remove the room if has permission
+     * @param roomId the roomId of the room to leave
+     */
+    suspend fun deleteRoom(roomId: String, reason: String? = null)
 
     /**
      * Get a room from a roomId.

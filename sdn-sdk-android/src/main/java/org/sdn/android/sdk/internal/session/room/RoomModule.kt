@@ -53,8 +53,12 @@ import org.sdn.android.sdk.internal.session.room.create.DefaultCreateLocalRoomSt
 import org.sdn.android.sdk.internal.session.room.create.DefaultCreateLocalRoomTask
 import org.sdn.android.sdk.internal.session.room.create.DefaultCreateRoomFromLocalRoomTask
 import org.sdn.android.sdk.internal.session.room.create.DefaultCreateRoomTask
+import org.sdn.android.sdk.internal.session.room.create.DefaultDirectMsgByAddressTask
+import org.sdn.android.sdk.internal.session.room.create.DirectMsgByAddressTask
 import org.sdn.android.sdk.internal.session.room.delete.DefaultDeleteLocalRoomTask
+import org.sdn.android.sdk.internal.session.room.delete.DefaultDeleteRoomTask
 import org.sdn.android.sdk.internal.session.room.delete.DeleteLocalRoomTask
+import org.sdn.android.sdk.internal.session.room.delete.DeleteRoomTask
 import org.sdn.android.sdk.internal.session.room.directory.DefaultGetPublicRoomTask
 import org.sdn.android.sdk.internal.session.room.directory.DefaultGetRoomDirectoryVisibilityTask
 import org.sdn.android.sdk.internal.session.room.directory.DefaultSetRoomDirectoryVisibilityTask
@@ -226,6 +230,9 @@ internal abstract class RoomModule {
     abstract fun bindCreateRoomFromLocalRoomTask(task: DefaultCreateRoomFromLocalRoomTask): CreateRoomFromLocalRoomTask
 
     @Binds
+    abstract fun bindDirectMsgByAddressTask(task: DefaultDirectMsgByAddressTask): DirectMsgByAddressTask
+
+    @Binds
     abstract fun bindDeleteLocalRoomTask(task: DefaultDeleteLocalRoomTask): DeleteLocalRoomTask
 
     @Binds
@@ -248,6 +255,9 @@ internal abstract class RoomModule {
 
     @Binds
     abstract fun bindLeaveRoomTask(task: DefaultLeaveRoomTask): LeaveRoomTask
+
+    @Binds
+    abstract fun bindDeleteRoomTask(task: DefaultDeleteRoomTask): DeleteRoomTask
 
     @Binds
     abstract fun bindMeetingURLRoomTask(task: DefaultMeetingURLRoomTask): MeetingURLRoomTask

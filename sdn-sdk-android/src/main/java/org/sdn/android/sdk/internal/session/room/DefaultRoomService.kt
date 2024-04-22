@@ -48,7 +48,9 @@ import org.sdn.android.sdk.internal.session.room.alias.DeleteRoomAliasTask
 import org.sdn.android.sdk.internal.session.room.alias.GetRoomIdByAliasTask
 import org.sdn.android.sdk.internal.session.room.create.CreateLocalRoomTask
 import org.sdn.android.sdk.internal.session.room.create.CreateRoomTask
+import org.sdn.android.sdk.internal.session.room.create.DirectMsgByAddressTask
 import org.sdn.android.sdk.internal.session.room.delete.DeleteLocalRoomTask
+import org.sdn.android.sdk.internal.session.room.delete.DeleteRoomTask
 import org.sdn.android.sdk.internal.session.room.meeting.MeetingURLRoomTask
 import org.sdn.android.sdk.internal.session.room.membership.RoomChangeMembershipStateDataSource
 import org.sdn.android.sdk.internal.session.room.membership.RoomMemberHelper
@@ -65,23 +67,25 @@ import org.sdn.android.sdk.internal.util.fetchCopied
 import javax.inject.Inject
 
 internal class DefaultRoomService @Inject constructor(
-        @SessionDatabase private val monarchy: Monarchy,
-        private val createRoomTask: CreateRoomTask,
-        private val createLocalRoomTask: CreateLocalRoomTask,
-        private val deleteLocalRoomTask: DeleteLocalRoomTask,
-        private val joinRoomTask: JoinRoomTask,
-        private val markAllRoomsReadTask: MarkAllRoomsReadTask,
-        private val updateBreadcrumbsTask: UpdateBreadcrumbsTask,
-        private val roomIdByAliasTask: GetRoomIdByAliasTask,
-        private val deleteRoomAliasTask: DeleteRoomAliasTask,
-        private val resolveRoomStateTask: ResolveRoomStateTask,
-        private val peekRoomTask: PeekRoomTask,
-        private val roomGetter: RoomGetter,
-        private val roomSummaryDataSource: RoomSummaryDataSource,
-        private val roomChangeMembershipStateDataSource: RoomChangeMembershipStateDataSource,
-        private val leaveRoomTask: LeaveRoomTask,
-        private val roomSummaryUpdater: RoomSummaryUpdater,
-        private val meetingURLRoomTask: MeetingURLRoomTask
+    @SessionDatabase private val monarchy: Monarchy,
+    private val createRoomTask: CreateRoomTask,
+    private val createLocalRoomTask: CreateLocalRoomTask,
+    private val directMsgByAddressTask: DirectMsgByAddressTask,
+    private val deleteLocalRoomTask: DeleteLocalRoomTask,
+    private val joinRoomTask: JoinRoomTask,
+    private val markAllRoomsReadTask: MarkAllRoomsReadTask,
+    private val updateBreadcrumbsTask: UpdateBreadcrumbsTask,
+    private val roomIdByAliasTask: GetRoomIdByAliasTask,
+    private val deleteRoomAliasTask: DeleteRoomAliasTask,
+    private val resolveRoomStateTask: ResolveRoomStateTask,
+    private val peekRoomTask: PeekRoomTask,
+    private val roomGetter: RoomGetter,
+    private val roomSummaryDataSource: RoomSummaryDataSource,
+    private val roomChangeMembershipStateDataSource: RoomChangeMembershipStateDataSource,
+    private val leaveRoomTask: LeaveRoomTask,
+    private val deleteRoomTask: DeleteRoomTask,
+    private val roomSummaryUpdater: RoomSummaryUpdater,
+    private val meetingURLRoomTask: MeetingURLRoomTask
 ) : RoomService {
 
     override suspend fun createRoom(createRoomParams: CreateRoomParams): String {
@@ -95,6 +99,10 @@ internal class DefaultRoomService @Inject constructor(
 
     override suspend fun deleteLocalRoom(roomId: String) {
         deleteLocalRoomTask.execute(DeleteLocalRoomTask.Params(roomId))
+    }
+
+    override suspend fun createDmByWalletAddress(address: String): String {
+        return directMsgByAddressTask.execute(address)
     }
 
     override fun getRoom(roomId: String): Room? {
@@ -204,6 +212,10 @@ internal class DefaultRoomService @Inject constructor(
 
     override suspend fun leaveRoom(roomId: String, reason: String?) {
         leaveRoomTask.execute(LeaveRoomTask.Params(roomId, reason))
+    }
+
+    override suspend fun deleteRoom(roomId: String, reason: String?) {
+        deleteRoomTask.execute(DeleteRoomTask.Params(roomId, reason))
     }
 
     override suspend fun markAllAsRead(roomIds: List<String>) {
