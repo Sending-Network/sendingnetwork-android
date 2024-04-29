@@ -103,6 +103,9 @@ internal abstract class AuthModule {
     abstract fun bindQrLoginTokenTask(task: DefaultQrLoginTokenTask): QrLoginTokenTask
 
     @Binds
+    abstract fun bindFedInfoTask(task: DefaultFedInfoTask): FedInfoTask
+
+    @Binds
     abstract fun bindDidListTask(task: DefaultDidListTask): DidListTask
 
     @Binds

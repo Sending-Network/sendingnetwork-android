@@ -204,13 +204,7 @@ internal class MXMegolmEncryption(
     private suspend fun ensureOutboundSession(devicesInRoom: MXUsersDevicesMap<CryptoDeviceInfo>): MXOutboundSessionInfo {
         Timber.tag(loggerTag.value).v("ensureOutboundSession roomId:$roomId")
         var session = outboundSession
-        if (session == null ||
-                // Need to make a brand new session?
-                session.needsRotation(sessionRotationPeriodMsgs, sessionRotationPeriodMs) ||
-                // Is there a room history visibility change since the last outboundSession
-                cryptoStore.shouldShareHistory(roomId) != session.sharedHistory ||
-                // Determine if we have shared with anyone we shouldn't have
-                session.sharedWithTooManyDevices(devicesInRoom)) {
+        if (session == null) {
             Timber.tag(loggerTag.value).d("roomId:$roomId Starting new megolm session because we need to rotate.")
             session = prepareNewSessionInRoom()
             outboundSession = session

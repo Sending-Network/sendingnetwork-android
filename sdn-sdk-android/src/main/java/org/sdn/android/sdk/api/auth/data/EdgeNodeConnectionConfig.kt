@@ -46,7 +46,8 @@ data class EdgeNodeConnectionConfig(
         val tlsCipherSuites: List<CipherSuite>? = null,
         val shouldAcceptTlsExtensions: Boolean = true,
         val allowHttpExtension: Boolean = false,
-        val forceUsageTlsVersions: Boolean = false
+        val forceUsageTlsVersions: Boolean = false,
+        var peerId: String = ""
 ) {
 
     /**

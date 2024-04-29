@@ -108,9 +108,14 @@ class SimpleLoginFragment : Fragment() {
             val ecKeyPair: ECKeyPair = ECKeyPair.create(privateKey.decodeHex().toByteArray())
             val authService = SampleApp.getSDNClient(requireContext()).authenticationService()
             val sp = requireContext().getSharedPreferences("device_data", MODE_PRIVATE)
-            val deviceIdKey = "device_id_$address"
-            val deviceId = sp.getString(deviceIdKey, "") ?: ""
+            var deviceIdKey = "device_id_$address"
+            var deviceId = ""
             try {
+                val fedInfo = authService.getFedInfo(edgeNodeConnectionConfig)
+                edgeNodeConnectionConfig.peerId = fedInfo.peer
+                deviceIdKey = "device_id_${fedInfo.peer}_$address"
+                deviceId = sp.getString(deviceIdKey, "") ?: ""
+
                 val loginDidMsg = authService.didPreLogin(edgeNodeConnectionConfig, address, deviceId)
                 if (loginDidMsg.message is String) {
                     Log.d("loginLoginDidMsg", loginDidMsg.message)

@@ -143,6 +143,10 @@ interface AuthenticationService {
         updated: String,
     ): DidSaveResp
 
+    suspend fun getFedInfo(
+        edgeNodeConnectionConfig: EdgeNodeConnectionConfig,
+    ): FedInfoResp
+
     suspend fun didPreLogin(
         edgeNodeConnectionConfig: EdgeNodeConnectionConfig,
         address: String,

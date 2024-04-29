@@ -70,7 +70,8 @@ internal class DefaultAuthenticationService @Inject constructor(
         private val didCreateTask: DidCreateTask,
         private val didSaveTask: DidSaveTask,
         private val didPreLoginTask: DidPreLoginTask,
-        private val didLoginTask: DidLoginTask
+        private val didLoginTask: DidLoginTask,
+        private val fedInfoTask: FedInfoTask
 ) : AuthenticationService {
 
     private var pendingSessionData: PendingSessionData? = pendingSessionStore.getPendingSessionData()
@@ -455,6 +456,14 @@ internal class DefaultAuthenticationService @Inject constructor(
                 address = address,
                 updated = updated,
             )
+        )
+    }
+
+    override suspend fun getFedInfo(
+        edgeNodeConnectionConfig: EdgeNodeConnectionConfig,
+    ): FedInfoResp {
+        return fedInfoTask.execute(
+            FedInfoTask.Params(edgeNodeConnectionConfig = edgeNodeConnectionConfig)
         )
     }
 

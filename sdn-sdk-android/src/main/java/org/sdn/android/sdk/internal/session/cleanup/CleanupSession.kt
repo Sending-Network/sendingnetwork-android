@@ -72,22 +72,23 @@ internal class CleanupSession @Inject constructor(
 
         Timber.d("Cleanup: clear session data...")
         clearSessionDataTask.execute(Unit)
-
         if (deleteCrypto) {
             Timber.d("Cleanup: clear crypto data...")
             clearCryptoDataTask.execute(Unit)
-        }
 
-        Timber.d("Cleanup: clear the database keys")
-        realmKeysUtils.clear(SessionModule.getKeyAlias(userMd5))
-        realmKeysUtils.clear(CryptoModule.getKeyAlias(userMd5))
+            Timber.d("Cleanup: clear the database keys")
+            realmKeysUtils.clear(SessionModule.getKeyAlias(userMd5))
+            realmKeysUtils.clear(CryptoModule.getKeyAlias(userMd5))
+        }
 
         // Wait for all the Realm instance to be released properly. Closing Realm instance is async.
         // After that we can safely delete the Realm files
         waitRealmRelease()
 
         Timber.d("Cleanup: clear file system")
-        sessionFiles.deleteRecursively()
+        if (deleteCrypto) {
+            sessionFiles.deleteRecursively()
+        }
         sessionCache.deleteRecursively()
     }
 

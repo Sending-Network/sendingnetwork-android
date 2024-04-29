@@ -1279,7 +1279,7 @@ internal class DefaultCryptoService @Inject constructor(
     }
 
     private fun pullRoomKeyForEvent(event: Event) {
-        if (event.originServerTs != null && event.originServerTs < deviceListManager.getSessionLoginTime()) {
+        if (event.originServerTs != null && event.originServerTs < deviceListManager.getSessionThresholdTime()) {
             Timber.i("skip pulling keys for old event: ${event.eventId}")
             return
         }

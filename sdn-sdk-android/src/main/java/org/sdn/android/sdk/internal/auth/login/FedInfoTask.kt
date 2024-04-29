@@ -18,15 +18,10 @@ package org.sdn.android.sdk.internal.auth.login
 
 import dagger.Lazy
 import okhttp3.OkHttpClient
-import org.sdn.android.sdk.api.auth.LoginType
 import org.sdn.android.sdk.api.auth.data.EdgeNodeConnectionConfig
-import org.sdn.android.sdk.api.auth.data.LoginFlowTypes
+import org.sdn.android.sdk.api.auth.data.FedInfoResp
 import org.sdn.android.sdk.api.failure.Failure
-import org.sdn.android.sdk.api.session.Session
 import org.sdn.android.sdk.internal.auth.AuthAPI
-import org.sdn.android.sdk.internal.auth.SessionCreator
-import org.sdn.android.sdk.internal.auth.data.DidLoginParams
-import org.sdn.android.sdk.internal.auth.data.Identifier
 import org.sdn.android.sdk.internal.di.Unauthenticated
 import org.sdn.android.sdk.internal.network.RetrofitFactory
 import org.sdn.android.sdk.internal.network.executeRequest
@@ -35,49 +30,28 @@ import org.sdn.android.sdk.internal.network.ssl.UnrecognizedCertificateException
 import org.sdn.android.sdk.internal.task.Task
 import javax.inject.Inject
 
-internal interface DidLoginTask : Task<DidLoginTask.Params, Session> {
+internal interface FedInfoTask : Task<FedInfoTask.Params, FedInfoResp> {
     data class Params(
-        val edgeNodeConnectionConfig: EdgeNodeConnectionConfig,
-        val address: String,
-        val did: String,
-        val nonce: String,
-        val updated: String,
-        val token: String,
-        val appToken: String,
-        val deviceName: String,
-        val deviceId: String?
+        val edgeNodeConnectionConfig: EdgeNodeConnectionConfig
     )
 }
 
-internal class DefaultDidLoginTask @Inject constructor(
+internal class DefaultFedInfoTask @Inject constructor(
         @Unauthenticated
         private val okHttpClient: Lazy<OkHttpClient>,
         private val retrofitFactory: RetrofitFactory,
-        private val sessionCreator: SessionCreator
-) : DidLoginTask {
+) : FedInfoTask {
 
-    override suspend fun execute(params: DidLoginTask.Params): Session {
+    override suspend fun execute(params: FedInfoTask.Params): FedInfoResp {
         val client = buildClient(params.edgeNodeConnectionConfig)
         val homeServerUrl = params.edgeNodeConnectionConfig.homeServerUriBase.toString()
 
         val authAPI = retrofitFactory.create(client, homeServerUrl)
                 .create(AuthAPI::class.java)
 
-        val loginParams = DidLoginParams(
-            type = LoginFlowTypes.DID,
-            updated = params.updated,
-            randomServer = params.nonce,
-            identifier = Identifier(
-                address = params.address,
-                did = params.did,
-                token = params.token,
-                appToken = params.appToken,
-            )
-        )
-
-        val credentials = try {
+        val fedInfoResp = try {
             executeRequest(null) {
-                authAPI.login(loginParams)
+                authAPI.fedInfo()
             }
         } catch (throwable: Throwable) {
             throw when (throwable) {
@@ -89,9 +63,7 @@ internal class DefaultDidLoginTask @Inject constructor(
             }
         }
 
-        credentials.loginTime = System.currentTimeMillis()
-        credentials.peerId = params.edgeNodeConnectionConfig.peerId
-        return sessionCreator.createSession(credentials, params.edgeNodeConnectionConfig, LoginType.DIRECT)
+        return fedInfoResp
     }
 
     private fun buildClient(edgeNodeConnectionConfig: EdgeNodeConnectionConfig): OkHttpClient {

@@ -78,6 +78,10 @@ internal class DeviceListManager @Inject constructor(
         return credentials.loginTime
     }
 
+    fun getSessionThresholdTime() : Long {
+        return credentials.loginTime - 24 * 3600 * 1000
+    }
+
     private fun dispatchDeviceChange(users: List<String>) {
         synchronized(deviceChangeListeners) {
             deviceChangeListeners.forEach {

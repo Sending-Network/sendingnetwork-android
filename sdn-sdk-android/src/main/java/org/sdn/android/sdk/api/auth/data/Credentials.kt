@@ -58,8 +58,12 @@ data class Credentials(
         @Json(name = "well_known") val discoveryInformation: DiscoveryInformation? = null,
 
         @Json(name = "login_time") var loginTime: Long = 0,
+
+        @Json(name = "peer_id") var peerId: String = "",
 )
 
 internal fun Credentials.sessionId(): String {
-    return (if (deviceId.isNullOrBlank()) userId else "$userId|$deviceId").md5()
+        val userDevice = if (deviceId.isNullOrBlank()) userId else "$userId|$deviceId"
+        val userDevicePeer = if (peerId.isBlank()) userDevice else "$userDevice|$peerId"
+        return userDevicePeer.md5()
 }

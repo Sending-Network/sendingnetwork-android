@@ -491,7 +491,8 @@ internal class MXRatchetEncryption(
         if (currentSession.sessionIdentifier() != session.sessionId) {
             throw Exception("current session $session.sessionId is invalid for room: $roomId")
         }
-        val internalKey = currentSession.export(0)
+
+        val internalKey = currentSession.export(currentSession.firstKnownIndex)
         val payloadString = convertToUTF8(JsonCanonicalizer.getCanonicalJson(Map::class.java, payloadJson))
         Timber.i("aes decrypt with sessionId: ${session.sessionId}, key: $internalKey, cleartext: $payloadString")
         val ciphertext = AESUtil.encrypt(internalKey.toByteArray().copyOfRange(0, 16), payloadString)

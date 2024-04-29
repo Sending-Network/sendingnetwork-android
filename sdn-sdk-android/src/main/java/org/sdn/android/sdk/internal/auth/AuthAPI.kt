@@ -120,6 +120,9 @@ internal interface AuthAPI {
     @GET(NetworkConstants.URI_API_PREFIX_PATH_R0 + "login")
     suspend fun getLoginFlows(): LoginFlowResponse
 
+    @GET(NetworkConstants.URI_API_PREFIX_PATH_ + "fedinfo")
+    suspend fun fedInfo(): FedInfoResp
+
     @GET(NetworkConstants.URI_API_PREFIX_PATH_UNSTABLE + "address/{address}")
     suspend fun didList(@Path("address") address: String): DidListResp
 

@@ -86,7 +86,7 @@ internal class OutgoingKeyRequestManager @Inject constructor(
 
     fun requestKeyForEvent(event: Event, force: Boolean) {
 
-        if (!force && event.originServerTs != null && event.originServerTs < deviceListManager.getSessionLoginTime()) {
+        if (!force && event.originServerTs != null && event.originServerTs < deviceListManager.getSessionThresholdTime()) {
             Timber.i("skip requesting keys for old event: ${event.eventId}")
             return
         }
