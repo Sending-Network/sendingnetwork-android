@@ -36,6 +36,7 @@ import org.sdn.android.sdk.api.session.room.model.RoomMemberSummary
 import org.sdn.android.sdk.api.session.room.model.RoomSummary
 import org.sdn.android.sdk.api.session.room.model.create.CreateRoomParams
 import org.sdn.android.sdk.api.session.room.model.localecho.RoomLocalEcho
+import org.sdn.android.sdk.api.session.room.model.tag.RoomTag
 import org.sdn.android.sdk.api.session.room.peeking.PeekResult
 import org.sdn.android.sdk.api.session.room.roomSummaryQueryParams
 import org.sdn.android.sdk.api.session.room.summary.RoomAggregateNotificationCount
@@ -61,6 +62,7 @@ import org.sdn.android.sdk.internal.session.room.peeking.ResolveRoomStateTask
 import org.sdn.android.sdk.internal.session.room.read.MarkAllRoomsReadTask
 import org.sdn.android.sdk.internal.session.room.summary.RoomSummaryDataSource
 import org.sdn.android.sdk.internal.session.room.summary.RoomSummaryUpdater
+import org.sdn.android.sdk.internal.session.room.tags.AddTagToRoomTask
 import org.sdn.android.sdk.internal.session.user.accountdata.UpdateBreadcrumbsTask
 import org.sdn.android.sdk.internal.util.fetchCopied
 
@@ -84,6 +86,7 @@ internal class DefaultRoomService @Inject constructor(
     private val roomChangeMembershipStateDataSource: RoomChangeMembershipStateDataSource,
     private val leaveRoomTask: LeaveRoomTask,
     private val deleteRoomTask: DeleteRoomTask,
+    private val addTagTask: AddTagToRoomTask,
     private val roomSummaryUpdater: RoomSummaryUpdater,
     private val meetingURLRoomTask: MeetingURLRoomTask
 ) : RoomService {
@@ -216,6 +219,10 @@ internal class DefaultRoomService @Inject constructor(
 
     override suspend fun deleteRoom(roomId: String, reason: String?) {
         deleteRoomTask.execute(DeleteRoomTask.Params(roomId, reason))
+    }
+
+    override suspend fun hideRoom(roomId: String) {
+        addTagTask.execute(AddTagToRoomTask.Params(roomId, RoomTag.ROOM_TAG_INVISIBLE, 0.5))
     }
 
     override suspend fun markAllAsRead(roomIds: List<String>) {

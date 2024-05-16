@@ -214,6 +214,9 @@ data class RoomSummary(
     val isPublic: Boolean
         get() = joinRules == RoomJoinRules.PUBLIC
 
+    val isInvisible: Boolean
+        get() = hasTag(RoomTag.ROOM_TAG_INVISIBLE)
+
     /**
      * Test if the room has the provided [tag].
      */

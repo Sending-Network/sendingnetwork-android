@@ -162,6 +162,7 @@ internal open class RoomSummaryEntity(
         isFavourite = newTags.any { it.first == RoomTag.ROOM_TAG_FAVOURITE }
         isLowPriority = newTags.any { it.first == RoomTag.ROOM_TAG_LOW_PRIORITY }
         isServerNotice = newTags.any { it.first == RoomTag.ROOM_TAG_SERVER_NOTICE }
+        isInvisible = newTags.any { it.first == RoomTag.ROOM_TAG_INVISIBLE }
     }
 
     @Index
@@ -178,6 +179,12 @@ internal open class RoomSummaryEntity(
 
     @Index
     var isServerNotice: Boolean = false
+        set(value) {
+            if (value != field) field = value
+        }
+
+    @Index
+    var isInvisible: Boolean = false
         set(value) {
             if (value != field) field = value
         }

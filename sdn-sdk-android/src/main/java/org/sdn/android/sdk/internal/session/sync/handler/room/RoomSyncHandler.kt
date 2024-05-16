@@ -31,6 +31,7 @@ import org.sdn.android.sdk.api.session.events.model.toModel
 import org.sdn.android.sdk.api.session.node.NodeCapabilitiesService
 import org.sdn.android.sdk.api.session.room.model.Membership
 import org.sdn.android.sdk.api.session.room.model.RoomMemberContent
+import org.sdn.android.sdk.api.session.room.model.tag.RoomTag
 import org.sdn.android.sdk.api.session.room.send.SendState
 import org.sdn.android.sdk.api.session.room.threads.model.ThreadSummaryUpdateType
 import org.sdn.android.sdk.api.session.sync.InitialSyncStep
@@ -56,6 +57,7 @@ import org.sdn.android.sdk.internal.database.model.EventEntity
 import org.sdn.android.sdk.internal.database.model.EventInsertType
 import org.sdn.android.sdk.internal.database.model.RoomEntity
 import org.sdn.android.sdk.internal.database.model.RoomMemberSummaryEntity
+import org.sdn.android.sdk.internal.database.model.RoomSummaryEntity
 import org.sdn.android.sdk.internal.database.model.TimelineEventEntity
 import org.sdn.android.sdk.internal.database.model.deleteOnCascade
 import org.sdn.android.sdk.internal.database.model.threads.ThreadSummaryEntity
@@ -75,6 +77,7 @@ import org.sdn.android.sdk.internal.session.events.getFixedRoomMemberContent
 import org.sdn.android.sdk.internal.session.room.membership.RoomChangeMembershipStateDataSource
 import org.sdn.android.sdk.internal.session.room.membership.RoomMemberEventHandler
 import org.sdn.android.sdk.internal.session.room.summary.RoomSummaryUpdater
+import org.sdn.android.sdk.internal.session.room.tags.DeleteTagFromRoomTask
 import org.sdn.android.sdk.internal.session.room.timeline.PaginationDirection
 import org.sdn.android.sdk.internal.session.room.timeline.TimelineInput
 import org.sdn.android.sdk.internal.session.room.typing.TypingEventContent
@@ -104,6 +107,7 @@ internal class RoomSyncHandler @Inject constructor(
     private val liveEventService: Lazy<StreamEventsManager>,
     private val clock: Clock,
     private val unRequestedForwardManager: UnRequestedForwardManager,
+    private val deleteTagTask: DeleteTagFromRoomTask,
 ) {
 
     sealed class HandlingStrategy {
@@ -536,6 +540,14 @@ internal class RoomSyncHandler @Inject constructor(
                     chunkEntity = chunkEntity,
                     currentUserId = userId
             )
+        }
+
+        // clear invisible tag
+        val invisibleTag = RoomSummaryEntity.getOrNull(realm, roomId)?.tags()?.firstOrNull{ tag -> tag.tagName == RoomTag.ROOM_TAG_INVISIBLE}
+        if(invisibleTag != null){
+            runBlocking {
+                deleteTagTask.execute(DeleteTagFromRoomTask.Params(roomId,RoomTag.ROOM_TAG_INVISIBLE))
+            }
         }
 
         // posting new events to timeline if any is registered

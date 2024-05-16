@@ -122,7 +122,7 @@ class RoomListFragment : Fragment(), ToolbarConfigurable {
                         try {
                             when (which) {
                                 0 -> session.roomService().leaveRoom(it.roomSummary.roomId)
-                                1 -> session.roomService().deleteRoom(it.roomSummary.roomId)
+                                1 -> session.roomService().hideRoom(it.roomSummary.roomId)
                             }
                         } catch (failure: Throwable) {
                             Timber.e(failure, "fail to ${items[which]}")

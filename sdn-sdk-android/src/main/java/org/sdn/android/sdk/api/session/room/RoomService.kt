@@ -107,6 +107,8 @@ interface RoomService {
      */
     suspend fun deleteRoom(roomId: String, reason: String? = null)
 
+    suspend fun hideRoom(roomId: String)
+
     /**
      * Get a room from a roomId.
      * @param roomId the roomId to look for.

@@ -25,5 +25,6 @@ data class RoomTag(
         const val ROOM_TAG_FAVOURITE = "m.favourite"
         const val ROOM_TAG_LOW_PRIORITY = "m.lowpriority"
         const val ROOM_TAG_SERVER_NOTICE = "m.server_notice"
+        const val ROOM_TAG_INVISIBLE = "m.invisible" // room property is "isHiddenFromUser"
     }
 }

@@ -128,7 +128,7 @@ internal class RoomSummaryUpdater @Inject constructor(
         }
 
         // Hard to filter from the app now we use PagedList...
-        roomSummaryEntity.isHiddenFromUser = roomSummaryEntity.versioningState == VersioningState.UPGRADED_ROOM_JOINED ||
+        roomSummaryEntity.isHiddenFromUser = roomSummaryEntity.isInvisible || roomSummaryEntity.versioningState == VersioningState.UPGRADED_ROOM_JOINED ||
                 roomAccountDataDataSource.getAccountDataEvent(roomId, RoomAccountDataTypes.EVENT_TYPE_VIRTUAL_ROOM) != null
 
         val lastNameEvent = CurrentStateEventEntity.getOrNull(realm, roomId, type = EventType.STATE_ROOM_NAME, stateKey = "")?.root
