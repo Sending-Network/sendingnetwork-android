@@ -63,6 +63,7 @@ import org.sdn.android.sdk.internal.session.room.read.MarkAllRoomsReadTask
 import org.sdn.android.sdk.internal.session.room.summary.RoomSummaryDataSource
 import org.sdn.android.sdk.internal.session.room.summary.RoomSummaryUpdater
 import org.sdn.android.sdk.internal.session.room.tags.AddTagToRoomTask
+import org.sdn.android.sdk.internal.session.room.tags.DeleteTagFromRoomTask
 import org.sdn.android.sdk.internal.session.user.accountdata.UpdateBreadcrumbsTask
 import org.sdn.android.sdk.internal.util.fetchCopied
 
@@ -87,6 +88,7 @@ internal class DefaultRoomService @Inject constructor(
     private val leaveRoomTask: LeaveRoomTask,
     private val deleteRoomTask: DeleteRoomTask,
     private val addTagTask: AddTagToRoomTask,
+    private val deleteTagTask: DeleteTagFromRoomTask,
     private val roomSummaryUpdater: RoomSummaryUpdater,
     private val meetingURLRoomTask: MeetingURLRoomTask
 ) : RoomService {
@@ -223,6 +225,12 @@ internal class DefaultRoomService @Inject constructor(
 
     override suspend fun hideRoom(roomId: String) {
         addTagTask.execute(AddTagToRoomTask.Params(roomId, RoomTag.ROOM_TAG_INVISIBLE, 0.5))
+    }
+
+    override suspend fun showRoom(roomId: String) {
+        if (this.getRoom(roomId)?.roomSummary()?.isInvisible == true) {
+            deleteTagTask.execute(DeleteTagFromRoomTask.Params(roomId, RoomTag.ROOM_TAG_INVISIBLE))
+        }
     }
 
     override suspend fun markAllAsRead(roomIds: List<String>) {

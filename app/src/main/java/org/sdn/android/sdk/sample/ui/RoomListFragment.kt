@@ -72,7 +72,17 @@ class RoomListFragment : Fragment(), ToolbarConfigurable {
             val userId = views.otherUserIdField.text.toString().trim()
 
             viewLifecycleOwner.lifecycleScope.launch {
-                session.roomService().createDirectRoom(otherUserId = userId)
+                val roomService = session.roomService()
+                val roomId = roomService.getExistingDirectRoomWithUser(otherUserId = userId)
+                if (roomId.isNullOrEmpty()) {
+                    // create new direct room
+                    roomService.createDirectRoom(otherUserId = userId)
+                } else if (roomService.getRoom(roomId)?.roomSummary()?.isInvisible == true) {
+                    // show existing direct room
+                    roomService.showRoom(roomId)
+                } else {
+                    Timber.w("room already exists: %s", roomId)
+                }
             }
         //            GlobalScope.launch {
 //                println("contact-signOut out")
