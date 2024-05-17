@@ -17,6 +17,7 @@
 package org.sdn.android.sdk.api.session.room.location
 
 import androidx.lifecycle.LiveData
+import org.sdn.android.sdk.api.session.events.model.Content
 import org.sdn.android.sdk.api.session.room.model.livelocation.LiveLocationShareAggregatedSummary
 import org.sdn.android.sdk.api.util.Cancelable
 import org.sdn.android.sdk.api.util.Optional
@@ -32,7 +33,7 @@ interface LocationSharingService {
      * @param uncertainty Accuracy of the location in meters
      * @param isUserLocation indicates whether the location data corresponds to the user location or not (pinned location)
      */
-    suspend fun sendStaticLocation(latitude: Double, longitude: Double, uncertainty: Double?, isUserLocation: Boolean): Cancelable
+    suspend fun sendStaticLocation(latitude: Double, longitude: Double, uncertainty: Double?, isUserLocation: Boolean, additionalContent: Content? = null): Cancelable
 
     /**
      * Send a live location event to the room.

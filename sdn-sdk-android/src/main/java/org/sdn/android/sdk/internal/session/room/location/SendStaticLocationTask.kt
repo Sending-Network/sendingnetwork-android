@@ -16,6 +16,7 @@
 
 package org.sdn.android.sdk.internal.session.room.location
 
+import org.sdn.android.sdk.api.session.events.model.Content
 import org.sdn.android.sdk.api.util.Cancelable
 import org.sdn.android.sdk.internal.session.room.send.LocalEchoEventFactory
 import org.sdn.android.sdk.internal.session.room.send.queue.EventSenderProcessor
@@ -28,7 +29,8 @@ internal interface SendStaticLocationTask : Task<SendStaticLocationTask.Params, 
             val latitude: Double,
             val longitude: Double,
             val uncertainty: Double?,
-            val isUserLocation: Boolean
+            val isUserLocation: Boolean,
+            val additionalContent: Content? = null,
     )
 }
 
@@ -43,7 +45,8 @@ internal class DefaultSendStaticLocationTask @Inject constructor(
                 latitude = params.latitude,
                 longitude = params.longitude,
                 uncertainty = params.uncertainty,
-                isUserLocation = params.isUserLocation
+                isUserLocation = params.isUserLocation,
+                additionalContent = params.additionalContent
         )
         localEchoEventFactory.createLocalEcho(event)
         return eventSenderProcessor.postEvent(event)

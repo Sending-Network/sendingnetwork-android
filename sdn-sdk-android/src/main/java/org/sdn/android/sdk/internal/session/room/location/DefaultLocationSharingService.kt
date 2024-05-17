@@ -22,6 +22,7 @@ import com.zhuinden.monarchy.Monarchy
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
+import org.sdn.android.sdk.api.session.events.model.Content
 import org.sdn.android.sdk.api.session.room.location.LocationSharingService
 import org.sdn.android.sdk.api.session.room.location.UpdateLiveLocationShareResult
 import org.sdn.android.sdk.api.session.room.model.livelocation.LiveLocationShareAggregatedSummary
@@ -51,13 +52,14 @@ internal class DefaultLocationSharingService @AssistedInject constructor(
         fun create(roomId: String): DefaultLocationSharingService
     }
 
-    override suspend fun sendStaticLocation(latitude: Double, longitude: Double, uncertainty: Double?, isUserLocation: Boolean): Cancelable {
+    override suspend fun sendStaticLocation(latitude: Double, longitude: Double, uncertainty: Double?, isUserLocation: Boolean, additionalContent: Content?): Cancelable {
         val params = SendStaticLocationTask.Params(
                 roomId = roomId,
                 latitude = latitude,
                 longitude = longitude,
                 uncertainty = uncertainty,
                 isUserLocation = isUserLocation,
+                additionalContent = additionalContent,
         )
         return sendStaticLocationTask.execute(params)
     }
