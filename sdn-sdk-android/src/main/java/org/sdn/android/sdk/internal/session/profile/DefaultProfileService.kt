@@ -76,6 +76,10 @@ internal class DefaultProfileService @Inject constructor(
         userStore.updateAvatar(userId, response.contentUri)
     }
 
+    override suspend fun setAvatarUrl(userId: String, newAvatarUri: Uri) {
+        setAvatarUrlTask.execute(SetAvatarUrlTask.Params(userId = userId, newAvatarUrl = newAvatarUri.toString()))
+    }
+
     override suspend fun getAvatarUrl(userId: String): Optional<String> {
         val params = GetProfileInfoTask.Params(userId)
         val data = getProfileInfoTask.execute(params)

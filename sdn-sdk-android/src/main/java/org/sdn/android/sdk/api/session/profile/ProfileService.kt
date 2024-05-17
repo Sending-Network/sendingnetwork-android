@@ -57,6 +57,8 @@ interface ProfileService {
      */
     suspend fun updateAvatar(userId: String, newAvatarUri: Uri, fileName: String)
 
+    suspend fun setAvatarUrl(userId: String, newAvatarUri: Uri)
+
     /**
      * Return the current avatarUrl for this user.
      * @param userId the userId param to look for
