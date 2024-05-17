@@ -67,7 +67,7 @@ class RoomListFragment : Fragment(), ToolbarConfigurable {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         configureToolbar(views.toolbar, displayBack = false)
-11
+
         views.createRoomButton.setOnClickListener {
             val userId = views.otherUserIdField.text.toString().trim()
 

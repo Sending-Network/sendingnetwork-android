@@ -256,7 +256,7 @@ dependencies {
 
 ext {
     PUBLISH_GROUP_ID = 'io.github.linx-opennetwork'
-    PUBLISH_VERSION = '0.2.2'
+    PUBLISH_VERSION = '0.3.0'
     PUBLISH_ARTIFACT_ID = 'sdn-sdk-android'
 }
 
