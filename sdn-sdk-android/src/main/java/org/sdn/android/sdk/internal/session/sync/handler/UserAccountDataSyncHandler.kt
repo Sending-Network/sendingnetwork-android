@@ -181,16 +181,6 @@ internal class UserAccountDataSyncHandler @Inject constructor(
                 }
             }
         }
-
-        // Handle previous direct rooms
-        RoomSummaryEntity.getDirectRooms(realm, excludeRoomIds = content.values.flatten().toSet())
-                .forEach {
-                    it.isDirect = false
-                    it.directUserId = null
-                    // Also update the avatar and displayname, there was a specific treatment for DMs
-                    it.avatarUrl = roomAvatarResolver.resolve(realm, it.roomId)
-                    it.setDisplayName(roomDisplayNameResolver.resolve(realm, it.roomId))
-                }
     }
 
     private fun handleIgnoredUsers(realm: Realm, event: UserAccountDataEvent) {

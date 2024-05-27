@@ -138,9 +138,10 @@ internal class RoomSummaryUpdater @Inject constructor(
         val roomCreateEvent = CurrentStateEventEntity.getOrNull(realm, roomId, type = EventType.STATE_ROOM_CREATE, stateKey = "")?.root
         val joinRulesEvent = CurrentStateEventEntity.getOrNull(realm, roomId, type = EventType.STATE_ROOM_JOIN_RULES, stateKey = "")?.root
 
-        val roomType = ContentMapper.map(roomCreateEvent?.content).toModel<RoomCreateContent>()?.type
-        roomSummaryEntity.roomType = roomType
-        Timber.v("## Space: Updating summary room [$roomId] roomType: [$roomType]")
+        val createContent = ContentMapper.map(roomCreateEvent?.content).toModel<RoomCreateContent>()
+        roomSummaryEntity.roomType = createContent?.type
+        roomSummaryEntity.isDirect = createContent?.preset == "trusted_private_chat"
+        Timber.v("## Space: Updating summary room [$roomId] roomType: [$roomSummaryEntity.roomType]")
 
         val encryptionEvent = CurrentStateEventEntity.getOrNull(realm, roomId, type = EventType.STATE_ROOM_ENCRYPTION, stateKey = "")?.root
         Timber.d("## CRYPTO: currentEncryptionEvent is $encryptionEvent")

@@ -412,6 +412,7 @@ internal class RoomSyncHandler @Inject constructor(
         val eventIds = ArrayList<String>(eventList.size)
         val roomMemberContentsByUser = HashMap<String, RoomMemberContent?>()
 
+        var hasMessageEvent = false
         val optimizedThreadSummaryMap = hashMapOf<String, EventEntity>()
         for (rawEvent in eventList) {
             // It's annoying roomId is not there, but lot of code rely on it.
@@ -422,6 +423,9 @@ internal class RoomSyncHandler @Inject constructor(
             }
             if (event.eventId == null || event.senderId == null || event.type == null) {
                 continue
+            }
+            if (event.type == EventType.MESSAGE || event.type == EventType.ENCRYPTED) {
+                hasMessageEvent = true
             }
 
             val isInitialSync = insertType == EventInsertType.INITIAL_SYNC
@@ -543,10 +547,12 @@ internal class RoomSyncHandler @Inject constructor(
         }
 
         // clear invisible tag
-        val invisibleTag = RoomSummaryEntity.getOrNull(realm, roomId)?.tags()?.firstOrNull{ tag -> tag.tagName == RoomTag.ROOM_TAG_INVISIBLE}
-        if(invisibleTag != null){
-            runBlocking {
-                deleteTagTask.execute(DeleteTagFromRoomTask.Params(roomId,RoomTag.ROOM_TAG_INVISIBLE))
+        if (hasMessageEvent) {
+            val invisibleTag = RoomSummaryEntity.getOrNull(realm, roomId)?.tags()?.firstOrNull{ tag -> tag.tagName == RoomTag.ROOM_TAG_INVISIBLE}
+            if(invisibleTag != null){
+                runBlocking {
+                    deleteTagTask.execute(DeleteTagFromRoomTask.Params(roomId,RoomTag.ROOM_TAG_INVISIBLE))
+                }
             }
         }
 
