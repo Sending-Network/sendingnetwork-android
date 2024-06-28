@@ -18,30 +18,26 @@ package org.sdn.android.sdk.api.session.crypto.model
 
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
+import org.sdn.android.sdk.internal.di.MoshiProvider
 
 /**
- * Class representing a room key request content.
+ * Class representing an room key request recipient.
  */
 @JsonClass(generateAdapter = true)
-data class RoomKeyShareRequest(
-        @Json(name = "action")
-        override val action: String? = GossipingToDeviceObject.ACTION_SHARE_REQUEST,
+data class RequestRecipient(
+        @Json(name = "userId")
+        val userId: String,
 
-        @Json(name = "requesting_device_id")
-        override val requestingDeviceId: String? = null,
+        @Json(name = "deviceId")
+        val deviceId: String,
+) {
+    fun toJson(): String {
+        return MoshiProvider.providesMoshi().adapter(RequestRecipient::class.java).toJson(this)
+    }
 
-        @Json(name = "requesting_device_key")
-        val requestingDeviceKey: String? = null,
-
-        @Json(name = "requesting_device_otk")
-        val requestingDeviceOtk: String? = null,
-
-        @Json(name = "recipients")
-        var recipients: List<RequestRecipient>? = null,
-
-        @Json(name = "request_id")
-        override val requestId: String? = null,
-
-        @Json(name = "body")
-        val body: RoomKeyRequestBody? = null
-) : GossipingToDeviceObject
+    companion object {
+        fun fromJson(json: String?): RequestRecipient? {
+            return json?.let { MoshiProvider.providesMoshi().adapter(RequestRecipient::class.java).fromJson(it) }
+        }
+    }
+}

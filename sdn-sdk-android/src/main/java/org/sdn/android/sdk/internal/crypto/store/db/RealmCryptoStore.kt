@@ -1783,7 +1783,9 @@ internal class RealmCryptoStore @Inject constructor(
             userId: String,
             deviceId: String,
             deviceIdentityKey: String,
-            chainIndex: Int
+            chainIndex: Int,
+            lastUpdate: Long?,
+            directShare: Boolean?
     ) {
         doRealmTransaction(realmConfiguration) { realm ->
             SharedSessionEntity.create(
@@ -1793,7 +1795,9 @@ internal class RealmCryptoStore @Inject constructor(
                     userId = userId,
                     deviceId = deviceId,
                     deviceIdentityKey = deviceIdentityKey,
-                    chainIndex = chainIndex
+                    chainIndex = chainIndex,
+                    lastUpdate = lastUpdate,
+                    directShare = directShare
             )
         }
     }
@@ -1818,6 +1822,19 @@ internal class RealmCryptoStore @Inject constructor(
         }
         doRealmTransaction(realmConfiguration) { realm ->
             realm.insert(entityList)
+        }
+    }
+
+    override fun getSharedSessionEntity(roomId: String?, sessionId: String, deviceInfo: CryptoDeviceInfo): SharedSessionEntity? {
+        return doWithRealm(realmConfiguration) { realm ->
+            SharedSessionEntity.get(
+                realm = realm,
+                roomId = roomId,
+                sessionId = sessionId,
+                userId = deviceInfo.userId,
+                deviceId = deviceInfo.deviceId,
+                deviceIdentityKey = deviceInfo.identityKey()
+            )
         }
     }
 

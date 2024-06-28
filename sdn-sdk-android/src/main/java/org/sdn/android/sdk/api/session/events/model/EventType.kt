@@ -88,6 +88,8 @@ object EventType {
     // Key share events
     const val ROOM_KEY_REQUEST = "m.room_key_request"
     const val FORWARDED_ROOM_KEY = "m.forwarded_room_key"
+    const val ROOM_KEY_REQUIRE = "m.room_key_require"
+    const val ROOM_KEY_REPLY = "m.room_key_reply"
     val ROOM_KEY_WITHHELD = StableUnstableId(stable = "m.room_key.withheld", unstable = "org.matrix.room_key.withheld")
 
     const val REQUEST_SECRET = "m.secret.request"

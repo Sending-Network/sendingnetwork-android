@@ -16,6 +16,7 @@
 package org.sdn.android.sdk.internal.crypto.tasks
 
 import org.sdn.android.sdk.api.session.events.model.Event
+import org.sdn.android.sdk.api.session.events.model.EventType
 import org.sdn.android.sdk.api.session.room.model.localecho.RoomLocalEcho
 import org.sdn.android.sdk.api.session.room.send.SendState
 import org.sdn.android.sdk.internal.network.GlobalErrorReceiver
@@ -93,6 +94,9 @@ internal class DefaultSendEventTask @Inject constructor(
 
     @Throws
     private suspend fun handleEncryption(params: SendEventTask.Params): Event {
+        if (params.event.type == EventType.ROOM_KEY_REQUIRE || params.event.type == EventType.ROOM_KEY_REPLY) {
+            return params.event
+        }
         if (params.encrypt && !params.event.isEncrypted()) {
             return encryptEventTask.execute(
                     EncryptEventTask.Params(

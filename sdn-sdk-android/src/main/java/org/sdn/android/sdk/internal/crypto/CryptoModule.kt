@@ -73,6 +73,7 @@ import org.sdn.android.sdk.internal.crypto.tasks.DefaultInitializeCrossSigningTa
 import org.sdn.android.sdk.internal.crypto.tasks.DefaultPullSessionKeysTask
 import org.sdn.android.sdk.internal.crypto.tasks.DefaultPutSessionMapTask
 import org.sdn.android.sdk.internal.crypto.tasks.DefaultSendEventTask
+import org.sdn.android.sdk.internal.crypto.tasks.DefaultSendSimpleEventTask
 import org.sdn.android.sdk.internal.crypto.tasks.DefaultSendToDeviceTask
 import org.sdn.android.sdk.internal.crypto.tasks.DefaultSendVerificationMessageTask
 import org.sdn.android.sdk.internal.crypto.tasks.DefaultSetDeviceNameTask
@@ -89,6 +90,7 @@ import org.sdn.android.sdk.internal.crypto.tasks.InitializeCrossSigningTask
 import org.sdn.android.sdk.internal.crypto.tasks.PullSessionKeysTask
 import org.sdn.android.sdk.internal.crypto.tasks.PutSessionMapTask
 import org.sdn.android.sdk.internal.crypto.tasks.SendEventTask
+import org.sdn.android.sdk.internal.crypto.tasks.SendSimpleEventTask
 import org.sdn.android.sdk.internal.crypto.tasks.SendToDeviceTask
 import org.sdn.android.sdk.internal.crypto.tasks.SendVerificationMessageTask
 import org.sdn.android.sdk.internal.crypto.tasks.SetDeviceNameTask
@@ -235,6 +237,9 @@ internal abstract class CryptoModule {
 
     @Binds
     abstract fun bindSendToDeviceTask(task: DefaultSendToDeviceTask): SendToDeviceTask
+
+    @Binds
+    abstract fun bindSendSimpleEventTask(task: DefaultSendSimpleEventTask): SendSimpleEventTask
 
     @Binds
     abstract fun bindPullRoomKeyTask(task: DefaultPullSessionKeysTask): PullSessionKeysTask

@@ -43,7 +43,7 @@ import javax.inject.Inject
 @SessionScope
 internal class DeviceListManager @Inject constructor(
     private val cryptoStore: IMXCryptoStore,
-    private val olmDevice: MXOlmDevice,
+    val olmDevice: MXOlmDevice,
     private val syncTokenStore: SyncTokenStore,
     private val credentials: Credentials,
     private val downloadKeysForUsersTask: DownloadKeysForUsersTask,
@@ -80,6 +80,10 @@ internal class DeviceListManager @Inject constructor(
 
     fun getSessionThresholdTime() : Long {
         return credentials.loginTime - 24 * 3600 * 1000
+    }
+
+    fun getUserDevice(userId: String, deviceId: String): CryptoDeviceInfo? {
+        return this.cryptoStore.getUserDevice(userId, deviceId)
     }
 
     private fun dispatchDeviceChange(users: List<String>) {
@@ -573,7 +577,6 @@ internal class DeviceListManager @Inject constructor(
                 }
         )
     }
-
     companion object {
 
         /**

@@ -461,6 +461,41 @@ internal class MXOlmDevice @Inject constructor(
         return payloadString
     }
 
+    suspend fun olmEncryptMessage(theirDeviceIdentityKey: String, theirOneTimeKey: String, payloadString: String): Map<String, Any>? {
+        return try {
+            val olmSession = OlmSession()
+            store.doWithOlmAccount { olmAccount ->
+                olmSession.initOutboundSession(olmAccount, theirDeviceIdentityKey, theirOneTimeKey)
+            }
+            val olmMessage = olmSession.encryptMessage(payloadString)
+            mapOf(
+                "body" to olmMessage.mCipherText,
+                "type" to olmMessage.mType,
+            )
+        } catch (e: Throwable) {
+            Timber.tag(loggerTag.value).e(e, "## encryptMessage() : failed to encrypt olm with device:$theirDeviceIdentityKey")
+            null
+        }
+    }
+
+    suspend fun olmDecryptMessage(ciphertext: String, messageType: Int): String? {
+        return try {
+            val olmSession = OlmSession()
+            store.doWithOlmAccount { olmAccount ->
+                olmSession.initInboundSession(olmAccount, ciphertext)
+            }
+
+            val olmMessage = OlmMessage()
+            olmMessage.mCipherText = ciphertext
+            olmMessage.mType = messageType.toLong()
+
+            olmSession.decryptMessage(olmMessage)
+        } catch (e: Exception) {
+            Timber.tag(loggerTag.value).e(e, "## createInboundSession() : the session creation failed")
+            null
+        }
+    }
+
     /**
      * Determine if an incoming messages is a prekey message matching an existing session.
      *

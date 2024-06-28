@@ -54,7 +54,9 @@ internal fun SharedSessionEntity.Companion.create(
         userId: String,
         deviceId: String,
         deviceIdentityKey: String,
-        chainIndex: Int
+        chainIndex: Int,
+        lastUpdate: Long?,
+        directShare: Boolean?
 ): SharedSessionEntity {
     return realm.createObject<SharedSessionEntity>().apply {
         this.roomId = roomId
@@ -63,5 +65,7 @@ internal fun SharedSessionEntity.Companion.create(
         this.deviceId = deviceId
         this.deviceIdentityKey = deviceIdentityKey
         this.chainIndex = chainIndex
+        this.lastUpdate = lastUpdate
+        this.directShare = directShare
     }
 }

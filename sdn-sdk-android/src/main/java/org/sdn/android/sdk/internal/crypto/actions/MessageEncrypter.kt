@@ -86,4 +86,24 @@ internal class MessageEncrypter @Inject constructor(
                 cipherText = ciphertext
         )
     }
+
+    suspend fun directEncryptMessage(payloadFields: Content, userId: String, deviceId: String,
+                                     deviceCurve25519Key: String, deviceOtk: String): EncryptedMessage {
+
+        val payloadJson = payloadFields.toMutableMap()
+        payloadJson["sender"] = this.userId
+        payloadJson["sender_device"] = this.deviceId!!
+        payloadJson["keys"] = mapOf("ed25519" to olmDevice.deviceEd25519Key!!)
+        payloadJson["recipient"] = userId
+        val payloadString = convertToUTF8(JsonCanonicalizer.getCanonicalJson(Map::class.java, payloadJson))
+
+        val ciphertext = mutableMapOf<String, Any>()
+        ciphertext[deviceCurve25519Key] = olmDevice.olmEncryptMessage(deviceCurve25519Key, deviceOtk, payloadString)!!
+
+        return EncryptedMessage(
+            algorithm = MXCRYPTO_ALGORITHM_OLM,
+            senderKey = olmDevice.deviceCurve25519Key,
+            cipherText = ciphertext
+        )
+    }
 }

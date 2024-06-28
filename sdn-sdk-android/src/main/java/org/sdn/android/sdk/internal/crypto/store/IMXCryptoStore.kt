@@ -42,6 +42,7 @@ import org.sdn.android.sdk.internal.crypto.model.OutboundGroupSessionWrapper
 import org.sdn.android.sdk.internal.crypto.store.db.model.KeysBackupDataEntity
 import org.matrix.olm.OlmAccount
 import org.matrix.olm.OlmOutboundGroupSession
+import org.sdn.android.sdk.internal.crypto.store.db.model.SharedSessionEntity
 
 /**
  * The crypto data store.
@@ -577,7 +578,9 @@ internal interface IMXCryptoStore {
             userId: String,
             deviceId: String,
             deviceIdentityKey: String,
-            chainIndex: Int
+            chainIndex: Int,
+            lastUpdate: Long? = 0,
+            directShare: Boolean? = false
     )
 
     fun batchMarkedSessionAsShared(
@@ -595,6 +598,8 @@ internal interface IMXCryptoStore {
      */
     fun getSharedSessionInfo(roomId: String?, sessionId: String, deviceInfo: CryptoDeviceInfo): SharedSessionResult
     data class SharedSessionResult(val found: Boolean, val chainIndex: Int?)
+
+    fun getSharedSessionEntity(roomId: String?, sessionId: String, deviceInfo: CryptoDeviceInfo): SharedSessionEntity?
 
     fun getSharedWithInfo(roomId: String?, sessionId: String): MXUsersDevicesMap<Int>
     // Dev tools

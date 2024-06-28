@@ -21,6 +21,7 @@ import org.sdn.android.sdk.api.logger.LoggerTag
 import org.sdn.android.sdk.api.session.crypto.MXCryptoError
 import org.sdn.android.sdk.api.session.crypto.model.MXEventDecryptionResult
 import org.sdn.android.sdk.api.session.events.model.Event
+import org.sdn.android.sdk.api.session.events.model.EventType
 import org.sdn.android.sdk.api.session.events.model.content.OlmEventContent
 import org.sdn.android.sdk.api.session.events.model.content.OlmPayloadContent
 import org.sdn.android.sdk.api.session.events.model.toModel
@@ -77,7 +78,13 @@ internal class MXOlmDecryption(
         @Suppress("UNCHECKED_CAST")
         val message = messageAny as JsonDict
 
-        val decryptedPayload = decryptMessage(message, senderKey)
+        val decryptedPayload =
+        if (event.type == EventType.ROOM_KEY_REPLY) {
+            decryptKeyReply(message, senderKey)
+        } else {
+            decryptMessage(message, senderKey)
+        }
+//      val decryptedPayload = decryptMessage(message, senderKey)
 
         if (decryptedPayload == null) {
             Timber.tag(loggerTag.value).e("## decryptEvent() Failed to decrypt Olm event (id= ${event.eventId} from $senderKey")
@@ -115,25 +122,26 @@ internal class MXOlmDecryption(
             )
         }
 
-        val recipientKeys = olmPayloadContent.recipientKeys ?: run {
-            Timber.tag(loggerTag.value).e(
+        if (event.type != EventType.ROOM_KEY_REPLY) {
+            val recipientKeys = olmPayloadContent.recipientKeys ?: run {
+                Timber.tag(loggerTag.value).e(
                     "## decryptEvent() : Olm event (id=${event.eventId}) contains no 'recipient_keys'" +
                             " property; cannot prevent unknown-key attack"
-            )
-            throw MXCryptoError.Base(
+                )
+                throw MXCryptoError.Base(
                     MXCryptoError.ErrorType.MISSING_PROPERTY,
                     String.format(MXCryptoError.ERROR_MISSING_PROPERTY_REASON, "recipient_keys")
-            )
-        }
+                )
+            }
 
-        val ed25519 = recipientKeys["ed25519"]
-
-        if (ed25519 != olmDevice.deviceEd25519Key) {
-            Timber.tag(loggerTag.value).e("## decryptEvent() : Event ${event.eventId}: Intended recipient ed25519 key $ed25519 did not match ours")
-            throw MXCryptoError.Base(
+            val ed25519 = recipientKeys["ed25519"]
+            if (ed25519 != olmDevice.deviceEd25519Key) {
+                Timber.tag(loggerTag.value).e("## decryptEvent() : Event ${event.eventId}: Intended recipient ed25519 key $ed25519 did not match ours")
+                throw MXCryptoError.Base(
                     MXCryptoError.ErrorType.BAD_RECIPIENT_KEY,
                     MXCryptoError.BAD_RECIPIENT_KEY_REASON
-            )
+                )
+            }
         }
 
         if (olmPayloadContent.sender.isNullOrBlank()) {
@@ -154,14 +162,14 @@ internal class MXOlmDecryption(
             )
         }
 
-        if (olmPayloadContent.roomId != event.roomId) {
-            Timber.tag(loggerTag.value)
-                    .e("## decryptEvent() : Event ${event.eventId}:  room ${olmPayloadContent.roomId} does not match reported room ${event.roomId}")
-            throw MXCryptoError.Base(
-                    MXCryptoError.ErrorType.BAD_ROOM,
-                    String.format(MXCryptoError.BAD_ROOM_REASON, olmPayloadContent.roomId)
-            )
-        }
+//        if (olmPayloadContent.roomId != event.roomId) {
+//            Timber.tag(loggerTag.value)
+//                    .e("## decryptEvent() : Event ${event.eventId}:  room ${olmPayloadContent.roomId} does not match reported room ${event.roomId}")
+//            throw MXCryptoError.Base(
+//                    MXCryptoError.ErrorType.BAD_ROOM,
+//                    String.format(MXCryptoError.BAD_ROOM_REASON, olmPayloadContent.roomId)
+//            )
+//        }
 
         val keys = olmPayloadContent.keys ?: run {
             Timber.tag(loggerTag.value).e("## decryptEvent failed : null keys")
@@ -176,6 +184,17 @@ internal class MXOlmDecryption(
                 senderCurve25519Key = senderKey,
                 claimedEd25519Key = keys["ed25519"]
         )
+    }
+
+    private suspend fun decryptKeyReply(message: JsonDict, theirDeviceIdentityKey: String): String? {
+        val messageBody = message["body"] as? String ?: return null
+        val messageType = when (val typeAsVoid = message["type"]) {
+            is Double -> typeAsVoid.toInt()
+            is Int -> typeAsVoid
+            is Long -> typeAsVoid.toInt()
+            else -> return null
+        }
+        return this.olmDevice.olmDecryptMessage(messageBody, messageType)
     }
 
     /**

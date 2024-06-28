@@ -119,6 +119,7 @@ import org.sdn.android.sdk.api.session.events.model.content.EncryptedEventConten
 import org.sdn.android.sdk.api.session.events.model.content.OlmEventContent
 import org.sdn.android.sdk.api.session.room.model.message.MessageContent
 import org.sdn.android.sdk.api.session.sync.model.ToDeviceSyncResponse
+import org.sdn.android.sdk.internal.crypto.model.rest.EncryptedMessage
 import org.sdn.android.sdk.internal.crypto.tasks.PullSessionKeysTask
 import timber.log.Timber
 import java.util.concurrent.atomic.AtomicBoolean
@@ -213,6 +214,58 @@ internal class DefaultCryptoService @Inject constructor(
     }
 
     fun onLiveEvent(roomId: String, event: Event, isInitialSync: Boolean) {
+        // handle key require
+        if (event.type == EventType.ROOM_KEY_REQUIRE) {
+            if (event.originServerTs == null || event.originServerTs < System.currentTimeMillis() - 24 * 3600 * 1000) {
+                Timber.tag(loggerTag.value).w("skip reply to old key require ${event.eventId}")
+                return
+            }
+            val keyShareRequest = event.content.toModel<RoomKeyShareRequest>()
+            if (event.senderId == null || keyShareRequest == null) {
+                return
+            }
+            val recipients = keyShareRequest.recipients
+            recipients?.let {
+                for (recipient in recipients) {
+                    if (this.userId == recipient.userId && this.deviceId == recipient.deviceId) {
+                        Timber.tag(loggerTag.value).i("received ${EventType.ROOM_KEY_REQUIRE} eventId: ${event.eventId}")
+                        this.incomingKeyRequestManager.addNewIncomingRequest(event.senderId, keyShareRequest)
+                    }
+                }
+            }
+            return
+        }
+        // handle key reply
+        if (event.type == EventType.ROOM_KEY_REPLY) {
+            val encryptedContent = event.content.toModel<EncryptedMessage>() ?: return
+            if (encryptedContent.cipherText?.contains(this.olmDevice.deviceCurve25519Key) != true) {
+                // not recipient
+                Timber.tag(loggerTag.value).i("skip handling ${EventType.ROOM_KEY_REPLY} as not in recipient ${event.eventId}")
+                return
+            }
+
+            Timber.tag(loggerTag.value).i("start decrypting ${EventType.ROOM_KEY_REPLY} eventId: ${event.eventId}")
+            try {
+                val result = runBlocking { decryptEvent(event.copy(roomId = roomId), "") }
+                event.mxDecryptionResult = OlmDecryptionResult(
+                    payload = result.clearEvent,
+                    senderKey = result.senderCurve25519Key,
+                    keysClaimed = result.claimedEd25519Key?.let { k -> mapOf("ed25519" to k) },
+                    forwardingCurve25519KeyChain = result.forwardingCurve25519KeyChain,
+                    isSafe = result.isSafe
+                )
+            } catch (e: MXCryptoError) {
+                if (e is MXCryptoError.Base) {
+                    event.mCryptoError = e.errorType
+                    event.mCryptoErrorReason = e.technicalMessage.takeIf { it.isNotEmpty() } ?: e.detailedErrorDescription
+                }
+                return
+            }
+
+            Timber.tag(loggerTag.value).i("received ${EventType.ROOM_KEY_REPLY} eventId: ${event.eventId}")
+            this.onRoomKeyEvent(event, true)
+        }
+
         // handle state events
         if (event.isStateEvent()) {
             when (event.type) {
