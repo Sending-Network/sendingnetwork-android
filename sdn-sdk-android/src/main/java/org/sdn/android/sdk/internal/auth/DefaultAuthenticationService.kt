@@ -86,6 +86,10 @@ internal class DefaultAuthenticationService @Inject constructor(
         return sessionManager.getLastSession()
     }
 
+    override fun getAuthenticatedSession(sessionId: String): Session? {
+        return sessionManager.getSession(sessionId)
+    }
+
     override suspend fun getLoginFlowOfSession(sessionId: String): LoginFlowResult {
         val homeServerConnectionConfig = sessionParamsStore.get(sessionId)?.edgeNodeConnectionConfig
                 ?: throw IllegalStateException("Session not found")

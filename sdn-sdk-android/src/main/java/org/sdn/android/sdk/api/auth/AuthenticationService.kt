@@ -90,6 +90,8 @@ interface AuthenticationService {
      */
     fun getLastAuthenticatedSession(): Session?
 
+    fun getAuthenticatedSession(sessionId: String): Session?
+
     /**
      * Create a session after a SSO successful login.
      */
