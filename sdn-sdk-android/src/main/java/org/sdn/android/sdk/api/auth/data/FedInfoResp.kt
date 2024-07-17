@@ -26,5 +26,5 @@ data class FedInfoResp(
         val peer: String,
 
         @Json(name = "addrs")
-        val addrs: List<String>
+        val addrs: List<String>?
 )
