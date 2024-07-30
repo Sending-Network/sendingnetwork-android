@@ -472,9 +472,9 @@ internal class IncomingKeyRequestManager @Inject constructor(
             deviceId = validRequest.requestingDeviceId,
             keys = mapOf("curve25519:${validRequest.requestingDeviceId}" to requestingDeviceKey)
         )
-        val sharedInfo = cryptoStore.getSharedSessionEntity(validRequest.roomId, validRequest.sessionId, requestingDeviceInfo)
-        if (sharedInfo != null && sharedInfo.directShare == true) {
-            val lastUpdate = sharedInfo.lastUpdate
+        val sharedDetail = cryptoStore.getSharedSessionDetail(validRequest.roomId, validRequest.sessionId, requestingDeviceInfo)
+        if (sharedDetail != null && sharedDetail.directShare == true) {
+            val lastUpdate = sharedDetail.lastUpdate
             if (lastUpdate != null && lastUpdate > nowTime - 24 * 3600 * 1000) {
                 Timber.tag(loggerTag.value).w(
                     "skip direct share ${validRequest.sessionId} to ${validRequest.requestingUserId}, last share at $lastUpdate")

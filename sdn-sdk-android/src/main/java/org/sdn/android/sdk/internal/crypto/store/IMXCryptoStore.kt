@@ -598,8 +598,15 @@ internal interface IMXCryptoStore {
      */
     fun getSharedSessionInfo(roomId: String?, sessionId: String, deviceInfo: CryptoDeviceInfo): SharedSessionResult
     data class SharedSessionResult(val found: Boolean, val chainIndex: Int?)
+    data class SharedSessionDetail(val roomId: String?,
+                                 val sessionId: String?,
+                                 val userId: String?,
+                                 val deviceId: String?,
+                                 val deviceIdentityKey: String?,
+                                 val lastUpdate: Long?,
+                                 val directShare: Boolean?)
 
-    fun getSharedSessionEntity(roomId: String?, sessionId: String, deviceInfo: CryptoDeviceInfo): SharedSessionEntity?
+    fun getSharedSessionDetail(roomId: String?, sessionId: String, deviceInfo: CryptoDeviceInfo): SharedSessionDetail?
 
     fun getSharedWithInfo(roomId: String?, sessionId: String): MXUsersDevicesMap<Int>
     // Dev tools

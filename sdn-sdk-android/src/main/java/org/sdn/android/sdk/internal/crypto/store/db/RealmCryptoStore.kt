@@ -1825,7 +1825,7 @@ internal class RealmCryptoStore @Inject constructor(
         }
     }
 
-    override fun getSharedSessionEntity(roomId: String?, sessionId: String, deviceInfo: CryptoDeviceInfo): SharedSessionEntity? {
+    override fun getSharedSessionDetail(roomId: String?, sessionId: String, deviceInfo: CryptoDeviceInfo): IMXCryptoStore.SharedSessionDetail? {
         return doWithRealm(realmConfiguration) { realm ->
             SharedSessionEntity.get(
                 realm = realm,
@@ -1834,7 +1834,10 @@ internal class RealmCryptoStore @Inject constructor(
                 userId = deviceInfo.userId,
                 deviceId = deviceInfo.deviceId,
                 deviceIdentityKey = deviceInfo.identityKey()
-            )
+            )?.let {
+                IMXCryptoStore.SharedSessionDetail(roomId, sessionId, deviceInfo.userId,
+                    deviceInfo.deviceId, deviceInfo.identityKey(), it.lastUpdate, it.directShare )
+            }
         }
     }
 
