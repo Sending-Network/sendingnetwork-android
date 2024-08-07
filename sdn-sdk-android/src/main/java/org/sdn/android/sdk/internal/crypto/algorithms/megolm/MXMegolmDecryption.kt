@@ -248,7 +248,7 @@ internal class MXMegolmDecryption(
                     senderKey = forwardedRoomKeyContent.senderKey.orEmpty(),
             ).isEmpty()
 
-            trusted = false
+            trusted = forceAccept
 
             if (!forceAccept && wasNotRequested) {
 //                val senderId = cryptoStore.deviceWithIdentityKey(event.getSenderKey().orEmpty())?.userId.orEmpty()
@@ -258,26 +258,25 @@ internal class MXMegolmDecryption(
                 return
             }
 
-            // Check who sent the request, as we requested we have the device keys (no need to download)
-            val sessionThatIsSharing = cryptoStore.deviceWithIdentityKey(eventSenderKey)
-            if (sessionThatIsSharing == null) {
-                Timber.tag(loggerTag.value).w("Ignoring forwarded_room_key from unknown device with identity $eventSenderKey")
-                return
-            }
-            val isOwnDevice = myUserId == sessionThatIsSharing.userId
-            val isDeviceVerified = sessionThatIsSharing.isVerified
-            val isFromSessionInitiator = sessionThatIsSharing.identityKey() == sessionInitiatorSenderKey
+            if (!forceAccept) {
+                // Check who sent the request, as we requested we have the device keys (no need to download)
+                val sessionThatIsSharing = cryptoStore.deviceWithIdentityKey(eventSenderKey)
+                if (sessionThatIsSharing == null) {
+                    Timber.tag(loggerTag.value).w("Ignoring forwarded_room_key from unknown device with identity $eventSenderKey")
+                    return
+                }
+                val isOwnDevice = myUserId == sessionThatIsSharing.userId
+                val isDeviceVerified = sessionThatIsSharing.isVerified
+                val isFromSessionInitiator = sessionThatIsSharing.identityKey() == sessionInitiatorSenderKey
 
-            val isLegitForward = (isOwnDevice && isDeviceVerified) ||
-                    (!cryptoConfig.limitRoomKeyRequestsToMyDevices && isFromSessionInitiator)
-
-            val shouldAcceptForward = forceAccept || isLegitForward
-
-            if (!shouldAcceptForward) {
-                Timber.tag(loggerTag.value)
+                val isLegitForward = (isOwnDevice && isDeviceVerified) ||
+                        (!cryptoConfig.limitRoomKeyRequestsToMyDevices && isFromSessionInitiator)
+                if (!isLegitForward) {
+                    Timber.tag(loggerTag.value)
                         .w("Ignoring forwarded_room_key device:$eventSenderKey, ownVerified:{$isOwnDevice&&$isDeviceVerified}," +
                                 " fromInitiator:$isFromSessionInitiator")
-                return
+                    return
+                }
             }
         } else {
             // It's a m.room_key so safe
