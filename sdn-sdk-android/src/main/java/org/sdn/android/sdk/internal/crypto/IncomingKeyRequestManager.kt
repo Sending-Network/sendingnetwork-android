@@ -31,7 +31,6 @@ import org.sdn.android.sdk.api.crypto.MXCRYPTO_ALGORITHM_RATCHET
 import org.sdn.android.sdk.api.crypto.MXCryptoConfig
 import org.sdn.android.sdk.api.extensions.tryOrNull
 import org.sdn.android.sdk.api.logger.LoggerTag
-import org.sdn.android.sdk.api.session.crypto.OutgoingRoomKeyRequestState
 import org.sdn.android.sdk.api.session.crypto.keyshare.GossipingRequestListener
 import org.sdn.android.sdk.api.session.crypto.model.CryptoDeviceInfo
 import org.sdn.android.sdk.api.session.crypto.model.IncomingRoomKeyRequest
@@ -41,11 +40,9 @@ import org.sdn.android.sdk.api.session.crypto.model.RoomKeyShareRequest
 import org.sdn.android.sdk.api.session.events.model.EventType
 import org.sdn.android.sdk.api.session.events.model.content.RoomKeyWithHeldContent
 import org.sdn.android.sdk.api.session.events.model.content.WithHeldCode
-import org.sdn.android.sdk.api.session.events.model.toContent
 import org.sdn.android.sdk.internal.crypto.actions.EnsureOlmSessionsForDevicesAction
 import org.sdn.android.sdk.internal.crypto.actions.MessageEncrypter
 import org.sdn.android.sdk.internal.crypto.store.IMXCryptoStore
-import org.sdn.android.sdk.internal.crypto.tasks.SendSimpleEventTask
 import org.sdn.android.sdk.internal.crypto.tasks.SendToDeviceTask
 import org.sdn.android.sdk.internal.session.SessionScope
 import org.sdn.android.sdk.internal.task.SemaphoreCoroutineSequencer
@@ -67,7 +64,6 @@ internal class IncomingKeyRequestManager @Inject constructor(
     private val messageEncrypter: MessageEncrypter,
     private val coroutineDispatchers: SDNCoroutineDispatchers,
     private val sendToDeviceTask: SendToDeviceTask,
-    private val sendSimpleEventTask: SendSimpleEventTask,
     private val clock: Clock,
 ) {
 
@@ -465,23 +461,6 @@ internal class IncomingKeyRequestManager @Inject constructor(
             Timber.tag(loggerTag.value).e("directShareMegolmKey: no requestingDeviceOtk from ${validRequest.requestingUserId} | ${validRequest.requestingDeviceId}")
         }
 
-        // check if shared in last 24 hours
-        val nowTime = System.currentTimeMillis()
-        val requestingDeviceInfo = CryptoDeviceInfo(
-            userId = validRequest.requestingUserId,
-            deviceId = validRequest.requestingDeviceId,
-            keys = mapOf("curve25519:${validRequest.requestingDeviceId}" to requestingDeviceKey)
-        )
-        val sharedDetail = cryptoStore.getSharedSessionDetail(validRequest.roomId, validRequest.sessionId, requestingDeviceInfo)
-        if (sharedDetail != null && sharedDetail.directShare == true) {
-            val lastUpdate = sharedDetail.lastUpdate
-            if (lastUpdate != null && lastUpdate > nowTime - 24 * 3600 * 1000) {
-                Timber.tag(loggerTag.value).w(
-                    "skip direct share ${validRequest.sessionId} to ${validRequest.requestingUserId}, last share at $lastUpdate")
-                return false
-            }
-        }
-
         Timber.tag(loggerTag.value).d("try to direct share Megolm Key for ${validRequest.shortDbgString()}")
         val sessionHolder = try {
             olmDevice.getInboundGroupSession(validRequest.sessionId, validRequest.senderKey, validRequest.roomId)
@@ -509,37 +488,19 @@ internal class IncomingKeyRequestManager @Inject constructor(
             payloadJson, validRequest.requestingUserId, validRequest.requestingDeviceId, requestingDeviceKey, requestingDeviceOtk)
         encryptedPayload.traceId = validRequest.sessionId
 
+        val sendToDeviceMap = MXUsersDevicesMap<Any>()
+        sendToDeviceMap.setObject(validRequest.requestingUserId, validRequest.requestingDeviceId, encryptedPayload)
+        Timber.tag(loggerTag.value).d(
+            "directShareMegolmKey() : try sending session ${validRequest.sessionId} to ${validRequest.requestingUserId} | ${validRequest.requestingDeviceId}")
+        val sendToDeviceParams = SendToDeviceTask.Params(EventType.ENCRYPTED, sendToDeviceMap)
         return try {
-            sendSimpleEventTask.execute(SendSimpleEventTask.Params(
-                roomId = validRequest.roomId,
-                eventType = EventType.ROOM_KEY_REPLY,
-                encryptedPayload.toContent()
-            ))
+            sendToDeviceTask.execute(sendToDeviceParams)
             Timber.tag(loggerTag.value)
-                .i("successfully direct shared session for ${validRequest.shortDbgString()}")
-            cryptoStore.saveForwardKeyAuditTrail(
-                validRequest.roomId,
-                validRequest.sessionId,
-                validRequest.senderKey,
-                validRequest.algorithm,
-                validRequest.requestingUserId,
-                validRequest.requestingDeviceId,
-                0,
-            )
-            cryptoStore.markedSessionAsShared(
-                validRequest.roomId,
-                validRequest.sessionId,
-                validRequest.requestingUserId,
-                validRequest.requestingDeviceId,
-                validRequest.requestingDeviceKey,
-                0,
-                nowTime,
-                true
-            )
+                .i("successfully re-shared session ${validRequest.sessionId} to ${validRequest.requestingUserId} | ${validRequest.requestingDeviceId}")
             true
         } catch (failure: Throwable) {
             Timber.tag(loggerTag.value)
-                .e(failure, "fail to direct share session for ${validRequest.shortDbgString()}")
+                .e(failure, "fail to re-share session ${validRequest.sessionId} to ${validRequest.requestingUserId} | ${validRequest.requestingDeviceId}")
             false
         }
     }

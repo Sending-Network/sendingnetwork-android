@@ -33,18 +33,15 @@ import org.sdn.android.sdk.api.session.crypto.OutgoingKeyRequest
 import org.sdn.android.sdk.api.session.crypto.OutgoingRoomKeyRequestState
 import org.sdn.android.sdk.api.session.crypto.model.GossipingToDeviceObject
 import org.sdn.android.sdk.api.session.crypto.model.MXUsersDevicesMap
-import org.sdn.android.sdk.api.session.crypto.model.RequestRecipient
 import org.sdn.android.sdk.api.session.crypto.model.RoomKeyRequestBody
 import org.sdn.android.sdk.api.session.crypto.model.RoomKeyShareRequest
 import org.sdn.android.sdk.api.session.events.model.Event
 import org.sdn.android.sdk.api.session.events.model.EventType
 import org.sdn.android.sdk.api.session.events.model.content.EncryptedEventContent
 import org.sdn.android.sdk.api.session.events.model.content.RoomKeyWithHeldContent
-import org.sdn.android.sdk.api.session.events.model.toContent
 import org.sdn.android.sdk.api.session.events.model.toModel
 import org.sdn.android.sdk.api.util.fromBase64
 import org.sdn.android.sdk.internal.crypto.store.IMXCryptoStore
-import org.sdn.android.sdk.internal.crypto.tasks.SendSimpleEventTask
 import org.sdn.android.sdk.internal.crypto.tasks.SendToDeviceTask
 import org.sdn.android.sdk.internal.di.SessionId
 import org.sdn.android.sdk.internal.di.UserId
@@ -74,7 +71,6 @@ internal class OutgoingKeyRequestManager @Inject constructor(
     private val cryptoConfig: MXCryptoConfig,
     private val inboundGroupSessionStore: InboundGroupSessionStore,
     private val sendToDeviceTask: SendToDeviceTask,
-    private val sendSimpleEventTask: SendSimpleEventTask,
     private val deviceListManager: DeviceListManager,
     private val perSessionBackupQueryRateLimiter: PerSessionBackupQueryRateLimiter
 ) {
@@ -460,18 +456,6 @@ internal class OutgoingKeyRequestManager @Inject constructor(
             }
         }
 
-        var directSend = false
-        val recipientsList = ArrayList<RequestRecipient>()
-        for ((userId, devices) in request.recipients) {
-            recipientsList.add(RequestRecipient(userId, devices[0]))
-            if (userId != this.myUserId) {
-                if (this.deviceListManager.getUserDevice(userId, devices[0]) == null) {
-                    Timber.tag(loggerTag.value).w("need require key for $userId | ${devices[0]}")
-                    directSend = true
-                }
-            }
-        }
-
         deviceListManager.olmDevice.generateFallbackKeyIfNeeded()
         val fbkMap = deviceListManager.olmDevice.getFallbackKey()
         val curve25519KeyMap = fbkMap?.get("curve25519")
@@ -491,24 +475,6 @@ internal class OutgoingKeyRequestManager @Inject constructor(
             action = GossipingToDeviceObject.ACTION_SHARE_REQUEST,
             body = request.requestBody
         )
-
-        if (directSend) {
-            toDeviceContent.recipients = recipientsList
-            try {
-                sendSimpleEventTask.execute(SendSimpleEventTask.Params(
-                    roomId = roomId,
-                    eventType = EventType.ROOM_KEY_REQUIRE,
-                    content = toDeviceContent.toContent()
-                ))
-                Timber.tag(loggerTag.value).d("Key request sent for $sessionId in room $roomId to ${request.recipients}")
-                // The request was sent, so update state
-                cryptoStore.updateOutgoingRoomKeyRequestState(request.requestId, OutgoingRoomKeyRequestState.SENT)
-                // TODO update the audit trail
-            } catch (failure: Throwable) {
-                Timber.tag(loggerTag.value).v("Failed to request $sessionId targets:${request.recipients}")
-            }
-            return
-        }
 
         val contentMap = MXUsersDevicesMap<Any>()
         request.recipients.forEach { userToDeviceMap ->
