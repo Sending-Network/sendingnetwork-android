@@ -492,7 +492,7 @@ internal class IncomingKeyRequestManager @Inject constructor(
         sendToDeviceMap.setObject(validRequest.requestingUserId, validRequest.requestingDeviceId, encryptedPayload)
         Timber.tag(loggerTag.value).d(
             "directShareMegolmKey() : try sending session ${validRequest.sessionId} to ${validRequest.requestingUserId} | ${validRequest.requestingDeviceId}")
-        val sendToDeviceParams = SendToDeviceTask.Params(EventType.ENCRYPTED, sendToDeviceMap)
+        val sendToDeviceParams = SendToDeviceTask.Params(EventType.ROOM_KEY_REPLY, sendToDeviceMap)
         return try {
             sendToDeviceTask.execute(sendToDeviceParams)
             Timber.tag(loggerTag.value)

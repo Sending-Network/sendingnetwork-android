@@ -95,7 +95,8 @@ internal class CryptoSyncHandler @Inject constructor(
      */
     private suspend fun decryptToDeviceEvent(event: Event, timelineId: String?): Boolean {
         Timber.v("## CRYPTO | decryptToDeviceEvent")
-        if (event.getClearType() == EventType.ENCRYPTED) {
+        val eventType = event.getClearType()
+        if (eventType == EventType.ENCRYPTED || eventType == EventType.ROOM_KEY_REPLY) {
             var result: MXEventDecryptionResult? = null
             try {
                 result = cryptoService.decryptEvent(event, timelineId ?: "")
