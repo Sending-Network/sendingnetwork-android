@@ -1898,4 +1898,16 @@ internal class RealmCryptoStore @Inject constructor(
             // Can we do something for WithHeldSessionEntity?
         }
     }
+
+    override fun storeFbk25519(fbk25519: String) {
+        doRealmTransaction(realmConfiguration) {
+            it.where<CryptoMetadataEntity>().findFirst()?.fbk25519 = fbk25519
+        }
+    }
+
+    override fun getFbk25519(): String {
+        return doWithRealm(realmConfiguration) {
+            it.where<CryptoMetadataEntity>().findFirst()?.fbk25519
+        } ?: ""
+    }
 }

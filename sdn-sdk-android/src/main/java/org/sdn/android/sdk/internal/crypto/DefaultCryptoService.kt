@@ -214,56 +214,15 @@ internal class DefaultCryptoService @Inject constructor(
     }
 
     fun onLiveEvent(roomId: String, event: Event, isInitialSync: Boolean) {
-        // handle key require
-        if (event.type == EventType.ROOM_KEY_REQUIRE) {
-            if (event.originServerTs == null || event.originServerTs < System.currentTimeMillis() - 24 * 3600 * 1000) {
-                Timber.tag(loggerTag.value).w("skip reply to old key require ${event.eventId}")
-                return
+        val senderUserId = event.senderId
+        val senderDeviceId = event.content?.get("device_id")?.toString()
+        val senderDeviceKey = event.getSenderKey()
+        if (!senderUserId.isNullOrEmpty() && !senderDeviceId.isNullOrEmpty() && !senderDeviceKey.isNullOrEmpty()) {
+            val deviceInfo = this.deviceListManager.getUserDevice(senderUserId, senderDeviceId)
+            if (deviceInfo == null || deviceInfo.identityKey() != senderDeviceKey) {
+                Timber.tag(loggerTag.value).w("unknown sender $senderUserId | $senderDeviceId from event ${event.eventId}")
+                this.deviceListManager.handleDeviceListsChanges(listOf(senderUserId), emptyList())
             }
-            val keyShareRequest = event.content.toModel<RoomKeyShareRequest>()
-            if (event.senderId == null || keyShareRequest == null) {
-                return
-            }
-            val recipients = keyShareRequest.recipients
-            recipients?.let {
-                for (recipient in recipients) {
-                    if (this.userId == recipient.userId && this.deviceId == recipient.deviceId) {
-                        Timber.tag(loggerTag.value).i("received ${EventType.ROOM_KEY_REQUIRE} eventId: ${event.eventId}")
-                        this.incomingKeyRequestManager.addNewIncomingRequest(event.senderId, keyShareRequest)
-                    }
-                }
-            }
-            return
-        }
-        // handle key reply
-        if (event.type == EventType.ROOM_KEY_REPLY) {
-            val encryptedContent = event.content.toModel<EncryptedMessage>() ?: return
-            if (encryptedContent.cipherText?.contains(this.olmDevice.deviceCurve25519Key) != true) {
-                // not recipient
-                Timber.tag(loggerTag.value).i("skip handling ${EventType.ROOM_KEY_REPLY} as not in recipient ${event.eventId}")
-                return
-            }
-
-            Timber.tag(loggerTag.value).i("start decrypting ${EventType.ROOM_KEY_REPLY} eventId: ${event.eventId}")
-            try {
-                val result = runBlocking { decryptEvent(event.copy(roomId = roomId), "") }
-                event.mxDecryptionResult = OlmDecryptionResult(
-                    payload = result.clearEvent,
-                    senderKey = result.senderCurve25519Key,
-                    keysClaimed = result.claimedEd25519Key?.let { k -> mapOf("ed25519" to k) },
-                    forwardingCurve25519KeyChain = result.forwardingCurve25519KeyChain,
-                    isSafe = result.isSafe
-                )
-            } catch (e: MXCryptoError) {
-                if (e is MXCryptoError.Base) {
-                    event.mCryptoError = e.errorType
-                    event.mCryptoErrorReason = e.technicalMessage.takeIf { it.isNotEmpty() } ?: e.detailedErrorDescription
-                }
-                return
-            }
-
-            Timber.tag(loggerTag.value).i("received ${EventType.ROOM_KEY_REPLY} eventId: ${event.eventId}")
-            this.onRoomKeyEvent(event, true)
         }
 
         // handle state events
@@ -1117,10 +1076,6 @@ internal class DefaultCryptoService @Inject constructor(
      * Upload my user's device keys.
      */
     private suspend fun uploadDeviceKeys() {
-        if (cryptoStore.areDeviceKeysUploaded()) {
-            Timber.tag(loggerTag.value).d("Keys already uploaded, nothing to do")
-            return
-        }
         // Prepare the device keys data to send
         // Sign it
         val canonicalJson = JsonCanonicalizer.getCanonicalJson(Map::class.java, getMyDevice().signalableJSONDictionary())

@@ -94,7 +94,7 @@ internal class OneTimeKeysUploader @Inject constructor(
                     Timber.w("maybeUploadOneTimeKeys: Failed to get otk count from server")
                 }
 
-        Timber.d("maybeUploadOneTimeKeys: otk count $oneTimeKeyCountFromSync , unpublished fallback key ${olmDevice.hasUnpublishedFallbackKey()}")
+        Timber.d("maybeUploadOneTimeKeys: otk count $oneTimeKeyCountFromSync")
 
         lastOneTimeKeyCheck = clock.epochMillis()
 
@@ -125,15 +125,6 @@ internal class OneTimeKeysUploader @Inject constructor(
             Timber.v("## uploadKeys() : success, $uploadedKeys key(s) sent")
         }
         oneTimeKeyCheckInProgress = false
-
-        // Check if we need to forget a fallback key
-        val latestPublishedTime = getLastFallbackKeyPublishTime()
-        if (latestPublishedTime != 0L && clock.epochMillis() - latestPublishedTime > FALLBACK_KEY_FORGET_DELAY) {
-            // This should be called once you are reasonably certain that you will not receive any more messages
-            // that use the old fallback key
-            Timber.d("## forgetFallbackKey()")
-            olmDevice.forgetFallbackKey()
-        }
     }
 
     private suspend fun fetchOtkCount(): Int? {
@@ -151,33 +142,19 @@ internal class OneTimeKeysUploader @Inject constructor(
      * @return the number of uploaded keys
      */
     private suspend fun uploadOTK(keyCount: Int, keyLimit: Int): Int {
-        if (keyLimit <= keyCount && !olmDevice.hasUnpublishedFallbackKey()) {
+        if (keyLimit <= keyCount) {
             // If we don't need to generate any more keys then we are done.
             return 0
         }
-        var keysThisLoop = 0
-        if (keyLimit > keyCount) {
-            // Creating keys can be an expensive operation so we limit the
-            // number we generate in one go to avoid blocking the application
-            // for too long.
-            keysThisLoop = min(keyLimit - keyCount, ONE_TIME_KEY_GENERATION_MAX_NUMBER)
-            olmDevice.generateOneTimeKeys(keysThisLoop)
-        }
-
-        // We check before sending if there is an unpublished key in order to saveLastFallbackKeyPublishTime if needed
-        val hadUnpublishedFallbackKey = olmDevice.hasUnpublishedFallbackKey()
+        val keysThisLoop = min(keyLimit - keyCount, ONE_TIME_KEY_GENERATION_MAX_NUMBER)
+        olmDevice.generateOneTimeKeys(keysThisLoop)
         val response = uploadOneTimeKeys(olmDevice.getOneTimeKeys())
         olmDevice.markKeysAsPublished()
-        if (hadUnpublishedFallbackKey) {
-            // It had an unpublished fallback key that was published just now
-            saveLastFallbackKeyPublishTime(clock.epochMillis())
-        }
 
         if (response.hasOneTimeKeyCountsForAlgorithm(MXKey.KEY_SIGNED_CURVE_25519_TYPE)) {
             // Maybe upload other keys
             return keysThisLoop +
-                    uploadOTK(response.oneTimeKeyCountsForAlgorithm(MXKey.KEY_SIGNED_CURVE_25519_TYPE), keyLimit) +
-                    (if (hadUnpublishedFallbackKey) 1 else 0)
+                    uploadOTK(response.oneTimeKeyCountsForAlgorithm(MXKey.KEY_SIGNED_CURVE_25519_TYPE), keyLimit) + 1
         } else {
             Timber.e("## uploadOTK() : response for uploading keys does not contain one_time_key_counts.signed_curve25519")
             throw Exception("response for uploading keys does not contain one_time_key_counts.signed_curve25519")

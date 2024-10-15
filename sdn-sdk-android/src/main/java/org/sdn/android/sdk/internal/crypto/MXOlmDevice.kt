@@ -17,6 +17,7 @@
 package org.sdn.android.sdk.internal.crypto
 
 import androidx.annotation.VisibleForTesting
+import com.squareup.moshi.Types
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.sdn.android.sdk.api.extensions.orFalse
@@ -156,10 +157,24 @@ internal class MXOlmDevice @Inject constructor(
      * Returns an unpublished fallback key.
      * A call to markKeysAsPublished will mark it as published and this
      * call will return null (until a call to generateFallbackKey is made).
+     * { "curve25519":
+     *   {
+     *     "AAAABQ":"qefVZd8qvjOpsFzoKSAdfUnJVkIreyxWFlipCHjSQQg"
+     *   }
+     * }
      */
     fun getFallbackKey(): MutableMap<String, MutableMap<String, String>>? {
+        val mapType = Types.newParameterizedType(MutableMap::class.java, String::class.java, String::class.java)
+        val adapterType = Types.newParameterizedType(MutableMap::class.java, String::class.java, mapType)
+        val adapter = MoshiProvider.providesMoshi().adapter<MutableMap<String, MutableMap<String, String>>>(adapterType)
         try {
-            return store.doWithOlmAccount { it.fallbackKey() }
+            val fbk = store.getFbk25519()
+            if(fbk.isNotEmpty()) {
+                return adapter.fromJson(fbk)
+            }
+            val fbkMap = store.doWithOlmAccount { it.fallbackKey() }
+            store.storeFbk25519(adapter.toJson(fbkMap))
+            return fbkMap
         } catch (e: Exception) {
             Timber.tag(loggerTag.value).e("## getFallbackKey() : failed")
         }
