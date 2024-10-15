@@ -23,6 +23,7 @@ import org.sdn.android.sdk.api.SDNCoroutineDispatchers
 import org.sdn.android.sdk.api.logger.LoggerTag
 import org.sdn.android.sdk.api.session.crypto.model.CryptoDeviceInfo
 import org.sdn.android.sdk.api.session.crypto.model.MXUsersDevicesMap
+import org.sdn.android.sdk.api.util.JsonDict
 import org.sdn.android.sdk.internal.crypto.MXOlmDevice
 import org.sdn.android.sdk.internal.crypto.model.MXKey
 import org.sdn.android.sdk.internal.crypto.model.MXOlmSessionResult
@@ -54,29 +55,28 @@ internal class EnsureOlmSessionsForDevicesAction @Inject constructor(
             val deviceList = devicesByUser.flatMap { it.value }
             Timber.tag(loggerTag.value)
                     .d("ensure olm forced:$force for ${deviceList.joinToString { it.shortDebugString() }}")
-            val devicesToCreateSessionWith = mutableListOf<CryptoDeviceInfo>()
-            if (force) {
-                // we take all devices and will query otk for them
-                devicesToCreateSessionWith.addAll(deviceList)
-            } else {
-                // only peek devices without active session
-                deviceList.forEach { deviceInfo ->
-                    val deviceId = deviceInfo.deviceId
-                    val userId = deviceInfo.userId
-                    val key = deviceInfo.identityKey() ?: return@forEach Unit.also {
-                        Timber.tag(loggerTag.value).w("Ignoring device ${deviceInfo.shortDebugString()} without identity key")
-                    }
 
-                    // is there a session that as been already used?
-                    val sessionId = olmDevice.getSessionId(key)
-                    if (sessionId.isNullOrEmpty()) {
-                        Timber.tag(loggerTag.value).d("Found no existing olm session ${deviceInfo.shortDebugString()} add to claim list")
-                        devicesToCreateSessionWith.add(deviceInfo)
-                    } else {
-                        Timber.tag(loggerTag.value).d("using olm session $sessionId for (${deviceInfo.userId}|$deviceId)")
-                        val olmSessionResult = MXOlmSessionResult(deviceInfo, sessionId)
-                        results.setObject(userId, deviceId, olmSessionResult)
+            val devicesToCreateSessionWith = mutableListOf<CryptoDeviceInfo>()
+            val devicesToClaimKeyWith = mutableListOf<CryptoDeviceInfo>()
+            deviceList.forEach { deviceInfo ->
+                val deviceId = deviceInfo.deviceId
+                val userId = deviceInfo.userId
+                val key = deviceInfo.identityKey() ?: return@forEach Unit.also {
+                    Timber.tag(loggerTag.value).w("Ignoring device ${deviceInfo.shortDebugString()} without identity key")
+                }
+
+                // is there a session that as been already used?
+                val sessionId = olmDevice.getSessionId(key)
+                if (force || sessionId.isNullOrEmpty()) {
+                    Timber.tag(loggerTag.value).d("Found no existing olm session ${deviceInfo.shortDebugString()} add to claim list")
+                    if (deviceInfo.fallbackKey().isNullOrEmpty()) {
+                        devicesToClaimKeyWith.add(deviceInfo)
                     }
+                    devicesToCreateSessionWith.add(deviceInfo)
+                } else {
+                    Timber.tag(loggerTag.value).d("using olm session $sessionId for (${deviceInfo.userId}|$deviceId)")
+                    val olmSessionResult = MXOlmSessionResult(deviceInfo, sessionId)
+                    results.setObject(userId, deviceId, olmSessionResult)
                 }
             }
 
@@ -84,24 +84,37 @@ internal class EnsureOlmSessionsForDevicesAction @Inject constructor(
                 // no session to create
                 return results
             }
-            val usersDevicesToClaim = MXUsersDevicesMap<String>().apply {
-                devicesToCreateSessionWith.forEach {
-                    setObject(it.userId, it.deviceId, MXKey.KEY_SIGNED_CURVE_25519_TYPE)
-                }
-            }
 
             // Let's now claim one time keys
-            val claimParams = ClaimOneTimeKeysForUsersDeviceTask.Params(usersDevicesToClaim)
-            val oneTimeKeys = withContext(coroutineDispatchers.io) {
-                oneTimeKeysForUsersDeviceTask.executeRetry(claimParams, ONE_TIME_KEYS_RETRY_COUNT)
+            var oneTimeKeys = MXUsersDevicesMap<MXKey>()
+            if (devicesToClaimKeyWith.isNotEmpty()) {
+                val usersDevicesToClaim = MXUsersDevicesMap<String>().apply {
+                    devicesToClaimKeyWith.forEach {
+                        setObject(it.userId, it.deviceId, MXKey.KEY_SIGNED_CURVE_25519_TYPE)
+                    }
+                }
+                val claimParams = ClaimOneTimeKeysForUsersDeviceTask.Params(usersDevicesToClaim)
+                oneTimeKeys = withContext(coroutineDispatchers.io) {
+                    oneTimeKeysForUsersDeviceTask.executeRetry(claimParams, ONE_TIME_KEYS_RETRY_COUNT)
+                }
             }
 
             // let now start olm session using the new otks
             devicesToCreateSessionWith.forEach { deviceInfo ->
                 val userId = deviceInfo.userId
                 val deviceId = deviceInfo.deviceId
+                val fbk = deviceInfo.fallbackKey()
                 // Did we get an OTK
-                val oneTimeKey = oneTimeKeys.getObject(userId, deviceId)
+                var oneTimeKey = oneTimeKeys.getObject(userId, deviceId)
+                if (oneTimeKey == null && !fbk.isNullOrEmpty()) {
+                    oneTimeKey = MXKey(
+                        type = MXKey.KEY_SIGNED_CURVE_25519_TYPE,
+                        keyId = "",
+                        value = fbk,
+                        signatures = emptyMap(),
+                        rawMap = emptyMap()
+                    )
+                }
                 if (oneTimeKey == null) {
                     Timber.tag(loggerTag.value).d("No otk for ${deviceInfo.shortDebugString()}")
                 } else if (oneTimeKey.type != MXKey.KEY_SIGNED_CURVE_25519_TYPE) {
@@ -124,19 +137,17 @@ internal class EnsureOlmSessionsForDevicesAction @Inject constructor(
 
     private fun verifyKeyAndStartSession(oneTimeKey: MXKey, userId: String, deviceInfo: CryptoDeviceInfo): String? {
         var sessionId: String? = null
+        var isVerified = true
+        var errorMessage: String? = null
 
         val deviceId = deviceInfo.deviceId
         val signKeyId = "ed25519:$deviceId"
         val signature = oneTimeKey.signatureForUserId(userId, signKeyId)
-
         val fingerprint = deviceInfo.fingerprint()
-        if (!signature.isNullOrEmpty() && !fingerprint.isNullOrEmpty()) {
-            var isVerified = false
-            var errorMessage: String? = null
 
+        if (!signature.isNullOrEmpty() && !fingerprint.isNullOrEmpty()) {
             try {
                 olmDevice.verifySignature(fingerprint, oneTimeKey.signalableJSONDictionary(), signature)
-                isVerified = true
             } catch (e: Exception) {
                 Timber.tag(loggerTag.value).d(
                         e, "verifyKeyAndStartSession() : Verify error for otk: ${oneTimeKey.signalableJSONDictionary()}," +
@@ -146,24 +157,24 @@ internal class EnsureOlmSessionsForDevicesAction @Inject constructor(
                         "verifyKeyAndStartSession() : Verify error for ${deviceInfo.userId}|${deviceInfo.deviceId} " +
                                 " - signable json ${oneTimeKey.signalableJSONDictionary()}"
                 )
+                isVerified = false
                 errorMessage = e.message
             }
-
-            // Check one-time key signature
-            if (isVerified) {
-                sessionId = deviceInfo.identityKey()?.let { identityKey ->
-                    olmDevice.createOutboundSession(identityKey, oneTimeKey.value)
-                }
-
-                if (sessionId.isNullOrEmpty()) {
-                    // Possibly a bad key
-                    Timber.tag(loggerTag.value).e("verifyKeyAndStartSession() : Error starting session with device $userId:$deviceId")
-                } else {
-                    Timber.tag(loggerTag.value).d("verifyKeyAndStartSession() : Started new sessionId $sessionId for device $userId:$deviceId")
-                }
-            } else {
-                Timber.tag(loggerTag.value).e("verifyKeyAndStartSession() : Unable to verify otk signature for $userId:$deviceId: $errorMessage")
+        }
+        // Check one-time key signature
+        if (isVerified) {
+            sessionId = deviceInfo.identityKey()?.let { identityKey ->
+                olmDevice.createOutboundSession(identityKey, oneTimeKey.value)
             }
+
+            if (sessionId.isNullOrEmpty()) {
+                // Possibly a bad key
+                Timber.tag(loggerTag.value).e("verifyKeyAndStartSession() : Error starting session with device $userId:$deviceId")
+            } else {
+                Timber.tag(loggerTag.value).d("verifyKeyAndStartSession() : Started new sessionId $sessionId for device $userId:$deviceId")
+            }
+        } else {
+            Timber.tag(loggerTag.value).e("verifyKeyAndStartSession() : Unable to verify otk signature for $userId:$deviceId: $errorMessage")
         }
 
         return sessionId

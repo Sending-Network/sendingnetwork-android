@@ -16,6 +16,7 @@
 
 package org.sdn.android.sdk.internal.crypto
 
+import org.matrix.olm.OlmAccount
 import org.sdn.android.sdk.api.auth.data.Credentials
 import org.sdn.android.sdk.api.session.crypto.crosssigning.DeviceTrustLevel
 import org.sdn.android.sdk.api.session.crypto.model.CryptoDeviceInfo
@@ -49,6 +50,15 @@ internal class MyDeviceInfoHolder @Inject constructor(
 
         if (!olmDevice.deviceCurve25519Key.isNullOrEmpty()) {
             keys["curve25519:" + credentials.deviceId] = olmDevice.deviceCurve25519Key!!
+        }
+
+        olmDevice.generateFallbackKeyIfNeeded()
+        olmDevice.getFallbackKey()?.let { fbkMap ->
+            fbkMap[OlmAccount.JSON_KEY_ONE_TIME_KEY]?.let {
+                for (item in it) {
+                    keys["fbk25519:" + credentials.deviceId] = item.value
+                }
+            }
         }
 
 //        myDevice.keys = keys

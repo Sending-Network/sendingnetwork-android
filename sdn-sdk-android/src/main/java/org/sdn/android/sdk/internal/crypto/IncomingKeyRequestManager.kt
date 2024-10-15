@@ -213,61 +213,28 @@ internal class IncomingKeyRequestManager @Inject constructor(
     }
 
     private suspend fun handleIncomingRequest(request: ValidMegolmRequestBody) {
-        // We don't want to download keys, if we don't know the device yet we won't share any how?
-        val requestingDevice = cryptoStore.getUserDevice(request.requestingUserId, request.requestingDeviceId)
-        if (requestingDevice == null || requestingDevice.identityKey() != request.requestingDeviceKey) {
-            directShareMegolmKey(request)
+        if (request.requestingUserId == credentials.userId && request.requestingDeviceId == credentials.deviceId) {
+            Timber.tag(loggerTag.value).w("ignoring key request from own user")
             return
         }
-
-        cryptoStore.saveIncomingKeyRequestAuditTrail(
-                request.requestId,
-                request.roomId,
-                request.sessionId,
-                request.senderKey,
-                request.algorithm,
-                request.requestingUserId,
-                request.requestingDeviceId
-        )
-
         if (!arrayOf(MXCRYPTO_ALGORITHM_MEGOLM, MXCRYPTO_ALGORITHM_RATCHET).contains(request.algorithm)) {
             // strange we received a request for a room that is not encrypted
             // maybe a broken state?
             Timber.tag(loggerTag.value).w("Received a key request in a room with unsupported alg:${request.algorithm} , req:${request.shortDbgString()}")
             return
         }
-
-        // Is it for one of our sessions?
-        if (request.requestingUserId == credentials.userId) {
-            Timber.tag(loggerTag.value).v("handling request from own user: megolm session ${request.sessionId}")
-
-            if (request.requestingDeviceId == credentials.deviceId) {
-                // ignore it's a remote echo
-                return
+        val requestingDevice = cryptoStore.getUserDevice(request.requestingUserId, request.requestingDeviceId)
+        if (requestingDevice != null) {
+            if (requestingDevice.fallbackKey().isNullOrEmpty() && !request.requestingDeviceOtk.isNullOrEmpty()) {
+                requestingDevice.setFallbackKey(request.requestingDeviceOtk)
             }
-            // If it's verified we share from the early index we know
-            // if not we check if it was originaly shared or not
-            if (requestingDevice.isVerified) {
-                // we share from the earliest known chain index
-                shareMegolmKey(request, requestingDevice, null)
-            } else {
-                Timber.tag(loggerTag.value).w("requesting device is not verified, still share the key")
-                shareMegolmKey(request, requestingDevice, null)
-            }
-        } else {
-            if (cryptoConfig.limitRoomKeyRequestsToMyDevices) {
-                Timber.tag(loggerTag.value).v("Ignore request from other user as per crypto config: ${request.shortDbgString()}")
-                return
-            }
-            Timber.tag(loggerTag.value).v("handling request from other user: megolm session ${request.sessionId}")
-            if (requestingDevice.isBlocked) {
-                // it's blocked, so send a withheld code
-                Timber.tag(loggerTag.value).w("requesting device is blocked, will not share the key")
-                sendWithheldForRequest(request, WithHeldCode.BLACKLISTED)
-            } else {
-                shareMegolmKey(request, requestingDevice, null)
+            if (!requestingDevice.fallbackKey().isNullOrEmpty()) {
+                if (shareMegolmKey(request, requestingDevice, null)){
+                    return
+                }
             }
         }
+        directShareMegolmKey(request)
     }
 
     private suspend fun shareIfItWasPreviouslyShared(request: ValidMegolmRequestBody, requestingDevice: CryptoDeviceInfo) {

@@ -23,7 +23,7 @@ data class CryptoDeviceInfo(
         val deviceId: String,
         override val userId: String,
         val algorithms: List<String>? = null,
-        override val keys: Map<String, String>? = null,
+        override var keys: Map<String, String>? = null,
         override val signatures: Map<String, Map<String, String>>? = null,
         val unsigned: UnsignedDeviceInfo? = null,
         var trustLevel: DeviceTrustLevel? = null,
@@ -53,6 +53,18 @@ data class CryptoDeviceInfo(
         return keys
                 ?.takeIf { deviceId.isNotBlank() }
                 ?.get("curve25519:$deviceId")
+    }
+
+    fun fallbackKey(): String? {
+        return keys
+            ?.takeIf { deviceId.isNotBlank() }
+            ?.get("fbk25519:$deviceId")
+    }
+
+    fun setFallbackKey(fbk: String) {
+        val keyMap = keys?.toMutableMap()
+        keyMap?.put("fbk25519:$deviceId", fbk)
+        keys = keyMap
     }
 
     /**

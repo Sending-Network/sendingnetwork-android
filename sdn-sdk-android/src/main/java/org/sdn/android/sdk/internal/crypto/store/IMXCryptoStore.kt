@@ -621,4 +621,6 @@ internal interface IMXCryptoStore {
     fun areDeviceKeysUploaded(): Boolean
     fun tidyUpDataBase()
     fun getOutgoingRoomKeyRequests(inStates: Set<OutgoingRoomKeyRequestState>): List<OutgoingKeyRequest>
+    fun storeFbk25519(fbk25519: String)
+    fun getFbk25519(): String
 }
